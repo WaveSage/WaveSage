@@ -23,7 +23,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  overflow-x: hidden;
+  max-width: 100%;
+  overflow-x: clip;
   background:
     radial-gradient(ellipse 80% 40% at 50% -5%, rgba(56, 160, 190, 0.2), transparent 50%),
     linear-gradient(180deg, #041018 0%, var(--bg) 40%, #082230 100%);
@@ -51,11 +52,13 @@ button {
 }
 
 .app-shell {
-  max-width: 1100px;
+  max-width: min(1100px, 100%);
   margin: 0 auto;
   padding: 0 0.75rem 2rem;
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .topbar {
@@ -66,6 +69,8 @@ button {
   margin: 0;
   padding: 0.25rem 0 0.15rem;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar-right {
@@ -73,11 +78,15 @@ button {
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .topbar .app-tabs {
   margin-bottom: 0;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .topbar .app-tabs button {
@@ -694,18 +703,22 @@ button {
 }
 
 .sage-panel {
-  max-width: 760px;
+  max-width: min(760px, 100%);
   margin: 0 auto;
   width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .sage-panel-engine {
-  max-width: 720px;
+  max-width: min(720px, 100%);
   margin: 0 auto;
   background: transparent;
   border: none;
   padding: 0;
   box-shadow: none;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .hero-tagline {
@@ -723,12 +736,25 @@ button {
   gap: 0.4rem;
   margin: 0 0 0.85rem;
   padding-top: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.surf-engine > *:not(.se-atmosphere) {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .se-atmosphere {
   pointer-events: none;
   position: absolute;
-  inset: 0 -0.25rem auto;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 200px;
   border-radius: 28px;
   opacity: 0.55;
@@ -770,11 +796,6 @@ button {
   to {
     transform: translateY(8px) scale(1.02);
   }
-}
-
-.surf-engine > *:not(.se-atmosphere) {
-  position: relative;
-  z-index: 1;
 }
 
 .se-loading {
@@ -842,7 +863,11 @@ button {
 .se-spot-rail {
   display: flex;
   gap: 0.55rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   padding: 0 0.1rem 0.15rem;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
@@ -888,6 +913,9 @@ button {
     linear-gradient(160deg, rgba(18, 55, 72, 0.92), rgba(8, 28, 40, 0.88));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .se-hero-top {
@@ -1057,12 +1085,16 @@ button {
   font-size: 1.05rem;
   line-height: 1.45;
   color: #d7eef5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .se-stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .se-stat {
@@ -1072,6 +1104,8 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.06);
   display: grid;
   gap: 0.15rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .se-stat-icon {
@@ -1156,8 +1190,25 @@ button {
 }
 
 @media (max-width: 640px) {
+  .app-shell {
+    padding: 0 0.65rem 1.75rem;
+  }
+
   .se-hero {
-    padding: 1rem 0.9rem 1.15rem;
+    padding: 1rem 0.85rem 1.1rem;
+  }
+
+  .se-card {
+    padding: 0.9rem 0.85rem 1rem;
+  }
+
+  .se-stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .se-stat {
+    padding: 0.65rem 0.7rem;
   }
 
   .se-spot-name {
@@ -1176,7 +1227,7 @@ button {
   }
 
   .se-stat-value {
-    font-size: 1.12rem;
+    font-size: 1.05rem;
   }
 
   .se-stat-label {
@@ -1191,6 +1242,14 @@ button {
     padding: 0.35rem 0.6rem;
     font-size: 0.8rem;
   }
+
+  .topbar {
+    flex-wrap: wrap;
+  }
+
+  .topbar-right {
+    width: 100%;
+  }
 }
 
 .se-stat-sub {
@@ -1204,6 +1263,9 @@ button {
   background: rgba(10, 36, 48, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.09);
   backdrop-filter: blur(12px);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .se-card h3 {
@@ -1261,11 +1323,12 @@ button {
 
 .se-sage-swell {
   position: absolute;
-  inset: -40% -20%;
+  inset: -30% -10%;
   border-radius: 45% 55% 50% 50%;
   opacity: 0.45;
   filter: blur(18px);
   will-change: transform;
+  max-width: none;
 }
 
 .se-sage-swell-a {
@@ -1487,6 +1550,8 @@ button {
   margin: 0 0 0.55rem;
   line-height: 1.5;
   font-size: 1.02rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .se-sage-advice {
@@ -1529,7 +1594,11 @@ button {
 .se-timeline-scroll {
   display: flex;
   gap: 0.55rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   padding-bottom: 0.25rem;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
