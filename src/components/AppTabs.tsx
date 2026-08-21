@@ -5,11 +5,9 @@ type AppTab = "sage" | "spots" | "reports";
 interface AppTabsProps {
   active: AppTab;
   onChange: (tab: AppTab) => void;
-  /** Guests only see Sage + User Reports (Trestles preview). */
-  guestMode?: boolean;
 }
 
-export function AppTabs({ active, onChange, guestMode = false }: AppTabsProps) {
+export function AppTabs({ active, onChange }: AppTabsProps) {
   return (
     <nav className="app-tabs" aria-label="Main navigation">
       <button
@@ -19,15 +17,13 @@ export function AppTabs({ active, onChange, guestMode = false }: AppTabsProps) {
       >
         Sage
       </button>
-      {!guestMode ? (
-        <button
-          type="button"
-          className={active === "spots" ? "active" : ""}
-          onClick={() => onChange("spots")}
-        >
-          Spots
-        </button>
-      ) : null}
+      <button
+        type="button"
+        className={active === "spots" ? "active" : ""}
+        onClick={() => onChange("spots")}
+      >
+        Spots
+      </button>
       <button
         type="button"
         className={active === "reports" ? "active" : ""}

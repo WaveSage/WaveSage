@@ -159,9 +159,8 @@ export default function HomePage() {
 
   useEffect(() => {
     if (regional || regionalLoading) return;
-    if (guestMode) return;
     void loadRegional();
-  }, [regional, regionalLoading, loadRegional, guestMode]);
+  }, [regional, regionalLoading, loadRegional]);
 
   function handleSelectSpot(spot: SurfSpot) {
     setSelectedSpotId(spot.id);
@@ -232,10 +231,6 @@ export default function HomePage() {
   }
 
   function handleTabChange(tab: AppTab) {
-    if (guestMode && tab === "spots") {
-      window.location.href = "/login?from=/";
-      return;
-    }
     setActiveTab(tab);
   }
 
@@ -268,7 +263,6 @@ export default function HomePage() {
           <AppTabs
             active={activeTab}
             onChange={handleTabChange}
-            guestMode={guestMode}
           />
           {user ? (
             <UserAccountMenu
@@ -312,7 +306,7 @@ export default function HomePage() {
         />
       )}
 
-      {activeTab === "spots" && user ? (
+      {activeTab === "spots" ? (
         <SoCalConditions
           forecast={regional}
           loading={regionalLoading}
@@ -320,6 +314,7 @@ export default function HomePage() {
           selectedSpotId={selectedSpotId}
           favoriteSpotId={favoriteSpotId}
           reportsRefreshKey={reportsRefreshKey}
+          guestMode={guestMode}
           onSelectSpot={handleSelectSpot}
           onFavoriteSpot={handleFavoriteSpot}
           onRefresh={loadRegional}

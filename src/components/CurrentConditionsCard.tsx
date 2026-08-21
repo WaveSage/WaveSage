@@ -7,12 +7,14 @@ interface CurrentConditionsCardProps {
   conditions: SurfConditions;
   reportsRefreshKey?: number;
   onOpenReport?: (reportId: string) => void;
+  hideUserPhoto?: boolean;
 }
 
 export function CurrentConditionsCard({
   conditions,
   reportsRefreshKey = 0,
   onOpenReport,
+  hideUserPhoto = false,
 }: CurrentConditionsCardProps) {
   const windDetail =
     conditions.windType !== "unknown"
@@ -50,11 +52,13 @@ export function CurrentConditionsCard({
         )}
       </div>
 
-      <ConditionsUserPhoto
-        spotId={conditions.spot.id}
-        refreshKey={reportsRefreshKey}
-        onOpenReport={onOpenReport}
-      />
+      {!hideUserPhoto ? (
+        <ConditionsUserPhoto
+          spotId={conditions.spot.id}
+          refreshKey={reportsRefreshKey}
+          onOpenReport={onOpenReport}
+        />
+      ) : null}
     </div>
   );
 }

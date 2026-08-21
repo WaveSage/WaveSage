@@ -26,6 +26,8 @@ interface SoCalConditionsProps {
   selectedSpotId: string;
   favoriteSpotId: string | null;
   reportsRefreshKey?: number;
+  /** Guests can view current conditions but not multi-day forecast. */
+  guestMode?: boolean;
   onSelectSpot: (spot: SurfSpot) => void;
   onFavoriteSpot: (spot: SurfSpot) => void;
   onRefresh: () => void;
@@ -43,6 +45,7 @@ export function SoCalConditions({
   onRefresh,
   reportsRefreshKey = 0,
   onOpenReport,
+  guestMode = false,
 }: SoCalConditionsProps) {
   const [expandedSpotId, setExpandedSpotId] = useState<string | null>(null);
   const [spotForecast, setSpotForecast] = useState<SpotForecast | null>(null);
@@ -71,13 +74,19 @@ export function SoCalConditions({
   }, []);
 
   useEffect(() => {
+    if (guestMode) {
+      setSpotForecast(null);
+      setForecastError(null);
+      setForecastLoading(false);
+      return;
+    }
     if (expandedSpotId) {
-      loadSpotForecast(expandedSpotId);
+      void loadSpotForecast(expandedSpotId);
     } else {
       setSpotForecast(null);
       setForecastError(null);
     }
-  }, [expandedSpotId, loadSpotForecast]);
+  }, [expandedSpotId, loadSpotForecast, guestMode]);
 
   const handleMapSelect = useCallback(
     (spotId: string) => {
@@ -155,15 +164,21 @@ export function SoCalConditions({
               <span className={`badge ${selected.quality}`}>
                 {selected.quality}
               </span>
-              <button
-                type="button"
-                className={`favorite-btn${favoriteSpotId === selected.spot.id ? " active" : ""}`}
-                onClick={() => onFavoriteSpot(selected.spot)}
-              >
-                {favoriteSpotId === selected.spot.id
-                  ? "★ Favorite"
-                  : "☆ Set favorite"}
-              </button>
+              {!guestMode ? (
+                <button
+                  type="button"
+                  className={`favorite-btn${favoriteSpotId === selected.spot.id ? " active" : ""}`}
+                  onClick={() => onFavoriteSpot(selected.spot)}
+                >
+                  {favoriteSpotId === selected.spot.id
+                    ? "★ Favorite"
+                    : "☆ Set favorite"}
+                </button>
+              ) : (
+                <a href="/login" className="favorite-btn guest-favorite-cta">
+                  Sign in to favorite
+                </a>
+              )}
             </div>
           </div>
 
@@ -190,18 +205,29 @@ export function SoCalConditions({
           <CurrentConditionsCard
             conditions={selected}
             reportsRefreshKey={reportsRefreshKey}
-            onOpenReport={onOpenReport}
+            onOpenReport={guestMode ? undefined : onOpenReport}
+            hideUserPhoto={guestMode}
           />
-          <SpotForecastPanel
-            forecast={spotForecast}
-            loading={forecastLoading}
-            error={forecastError}
-          />
+
+          {!guestMode ? (
+            <SpotForecastPanel
+              forecast={spotForecast}
+              loading={forecastLoading}
+              error={forecastError}
+            />
+          ) : (
+            <p className="muted spots-forecast-locked">
+              Multi-day forecast is available after you{" "}
+              <a href="/login">sign in</a> or{" "}
+              <a href="/signup">create an account</a>.
+            </p>
+          )}
         </div>
       ) : (
         <p className="muted spots-map-hint">
-          Tap a pin on the map to see conditions, forecast, and set your
-          favorite spot for Sage.
+          {guestMode
+            ? "Tap a pin on the map to see current conditions. Sign in for forecast and favorites."
+            : "Tap a pin on the map to see conditions, forecast, and set your favorite spot for Sage."}
         </p>
       )}
 

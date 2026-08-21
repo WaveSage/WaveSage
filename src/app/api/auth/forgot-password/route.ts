@@ -43,30 +43,33 @@ export async function POST(request: Request) {
     const created = await createPasswordResetForEmail(email);
     const origin = new URL(request.url).origin;
 
-    // Always return a generic message so emails can't be enumerated easily.
-    const generic = {
+    const genericNoMatch = {
       message:
-        "If an account exists for that email, a reset link is ready. Check your inbox or use the link below if shown.",
+        "If an account exists for that email, a reset option will appear here.",
+      emailed: false as const,
     };
 
     if (!created) {
-      return NextResponse.json(generic);
+      return NextResponse.json(genericNoMatch);
     }
 
     const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(created.token)}`;
     const emailed = await trySendResetEmail(created.user.email, resetUrl);
 
-    // When email isn't configured (common early on), return the link so the
-    // account owner can still reset from the forgot-password page.
     if (!emailed) {
       return NextResponse.json({
-        ...generic,
+        message:
+          "Email delivery isn’t configured yet. Use the reset link shown on this page.",
         resetUrl,
         emailed: false,
       });
     }
 
-    return NextResponse.json({ ...generic, emailed: true });
+    return NextResponse.json({
+      message:
+        "If an account exists for that email, a reset link was sent. Check your inbox and spam folder.",
+      emailed: true,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not start password reset.";
