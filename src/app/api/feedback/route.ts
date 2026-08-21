@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/session";
-import { hashMessageContent } from "@/lib/feedback/hash";
 import { runModerationCheck } from "@/lib/feedback/moderation";
 import {
   checkRateLimit,
@@ -164,6 +163,3 @@ export async function DELETE(request: Request) {
     feedback_id: feedbackId,
   });
 }
-
-/** Re-export hash for server-side validation if needed */
-export { hashMessageContent };
