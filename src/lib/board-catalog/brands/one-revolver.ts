@@ -1,0 +1,241 @@
+import type { BoardModel } from "../types";
+import { defineModel, T, WAVE } from "../helpers";
+
+/** ONE Surfboards (Dion Agius) and Revolver Surfboards models. */
+export const ONE_REVOLVER_MODELS: BoardModel[] = [
+  // --- ONE Surfboards (Dion Agius) ---
+  defineModel({
+    id: "one-the-one",
+    brand: "ONE Surfboards",
+    shaper: "Dion Agius / ONE Surfboards",
+    model: "The One",
+    aliases: ["the one", "one the one", "one surfboards the one"],
+    type: "hybrid",
+    finSetup: "thruster",
+    defaultLengthFt: 6.0,
+    volumeBase: 28,
+    volumePerFt: 0.85,
+    waveRange: WAVE.daily,
+    traits: T.dailyHybrid,
+    shaperNotes:
+      "Dion Agius's signature one-board quiver killer — a versatile hybrid outline for everyday surf. Extra volume for easy paddling with enough performance when conditions improve.",
+    feelSummary:
+      "Dion's daily driver — easy paddle with progressive performance.",
+  }),
+  defineModel({
+    id: "one-droid",
+    brand: "ONE Surfboards",
+    shaper: "Dion Agius / ONE Surfboards",
+    model: "Droid",
+    aliases: ["droid", "one droid"],
+    type: "hybrid",
+    finSetup: "quad",
+    defaultLengthFt: 5.67,
+    volumeBase: 25,
+    volumePerFt: 1.0,
+    waveRange: WAVE.smallMed,
+    traits: T.grovelHybrid,
+    shaperNotes:
+      "A wide, flat groveler with a quad setup for speed in small-to-medium surf. Agius designed it for progressive surfing in average beach breaks.",
+    feelSummary:
+      "Progressive quad groveler — fast and loose in average surf.",
+  }),
+  defineModel({
+    id: "one-neutron",
+    brand: "ONE Surfboards",
+    shaper: "Dion Agius / ONE Surfboards",
+    model: "Neutron",
+    aliases: ["neutron", "one neutron"],
+    type: "shortboard",
+    finSetup: "thruster",
+    defaultLengthFt: 5.9,
+    volumeBase: 25,
+    volumePerFt: 1.0,
+    waveRange: WAVE.performance,
+    traits: T.hpShort,
+    shaperNotes:
+      "A high-performance shortboard with a refined outline for clean, punchy surf. Built for tight pocket turns and confident rail work in good-quality waves.",
+    feelSummary:
+      "Clean-surf performer — snappy pocket turns in good waves.",
+  }),
+  defineModel({
+    id: "one-orb",
+    brand: "ONE Surfboards",
+    shaper: "Dion Agius / ONE Surfboards",
+    model: "Orb",
+    aliases: ["orb", "one orb"],
+    type: "hybrid",
+    finSetup: "quad",
+    defaultLengthFt: 5.5,
+    volumeBase: 24,
+    volumePerFt: 1.1,
+    waveRange: WAVE.grovel,
+    traits: {
+      speed: 9,
+      pivot: 8,
+      drive: 5,
+      paddle: 8,
+      hold: 4,
+      grovel: 9,
+      rail: 5,
+    },
+    shaperNotes:
+      "An alternative small-wave design with a wide, round outline for maximum planing speed. Agius's grovel weapon for the weakest beach-break conditions.",
+    feelSummary:
+      "Round grovel hybrid — maximum speed in gutless surf.",
+  }),
+  defineModel({
+    id: "one-satellite",
+    brand: "ONE Surfboards",
+    shaper: "Dion Agius / ONE Surfboards",
+    model: "Satellite",
+    aliases: ["satellite", "one satellite"],
+    type: "fish",
+    finSetup: "twin",
+    defaultLengthFt: 5.5,
+    volumeBase: 23,
+    volumePerFt: 1.1,
+    waveRange: WAVE.grovel,
+    traits: T.grovelFish,
+    shaperNotes:
+      "A wide, flat twin-keel fish for generating speed in weak surf. Built for glide and fun when conditions are small and soft.",
+    feelSummary:
+      "Glide-heavy twin fish — speed and fun in the weakest surf.",
+  }),
+  defineModel({
+    id: "one-step-one",
+    brand: "ONE Surfboards",
+    shaper: "Dion Agius / ONE Surfboards",
+    model: "Step One",
+    aliases: ["step one", "stepone", "one step one"],
+    type: "shortboard",
+    finSetup: "thruster",
+    defaultLengthFt: 6.2,
+    volumeBase: 28,
+    volumePerFt: 0.85,
+    waveRange: WAVE.stepUp,
+    traits: T.stepUp,
+    shaperNotes:
+      "A step-up shortboard with extra length and refined rails for overhead surf. Built for hold and drive when conditions push past everyday territory.",
+    feelSummary:
+      "Overhead step-up — hold and drive in bigger, more powerful surf.",
+  }),
+
+  // --- Revolver Surfboards ---
+  defineModel({
+    id: "revolver-classic",
+    brand: "Revolver Surfboards",
+    shaper: "Revolver Surfboards",
+    model: "Classic",
+    aliases: ["classic", "revolver classic", "revolver surfboards classic"],
+    type: "hybrid",
+    finSetup: "thruster",
+    defaultLengthFt: 6.0,
+    volumeBase: 28,
+    volumePerFt: 0.85,
+    waveRange: WAVE.daily,
+    traits: T.dailyHybrid,
+    shaperNotes:
+      "Revolver's benchmark daily-driver hybrid — extra volume and a balanced outline for easy paddling in average surf. A reliable go-to for everyday sessions.",
+    feelSummary:
+      "Classic daily hybrid — easy paddle with responsive turns.",
+  }),
+  defineModel({
+    id: "revolver-fish",
+    brand: "Revolver Surfboards",
+    shaper: "Revolver Surfboards",
+    model: "Fish",
+    aliases: ["fish", "revolver fish"],
+    type: "fish",
+    finSetup: "twin",
+    defaultLengthFt: 5.5,
+    volumeBase: 23,
+    volumePerFt: 1.1,
+    waveRange: WAVE.grovel,
+    traits: T.grovelFish,
+    shaperNotes:
+      "A wide, flat twin-keel fish for generating speed in weak surf. Revolver's small-wave specialist for maximum glide and fun.",
+    feelSummary:
+      "Grovel fish — glide and speed in the smallest surf.",
+  }),
+  defineModel({
+    id: "revolver-hybrid",
+    brand: "Revolver Surfboards",
+    shaper: "Revolver Surfboards",
+    model: "Hybrid",
+    aliases: ["hybrid", "revolver hybrid"],
+    type: "hybrid",
+    finSetup: "quad",
+    defaultLengthFt: 5.75,
+    volumeBase: 26,
+    volumePerFt: 0.95,
+    waveRange: WAVE.smallMed,
+    traits: {
+      speed: 8,
+      pivot: 8,
+      drive: 6,
+      paddle: 7,
+      hold: 5,
+      grovel: 8,
+      rail: 6,
+    },
+    shaperNotes:
+      "A wide, flat grovel hybrid with a quad setup for speed in small-to-medium surf. Built for progressive surfing in average beach breaks.",
+    feelSummary:
+      "Quad grovel hybrid — fast and loose in average surf.",
+  }),
+  defineModel({
+    id: "revolver-performance",
+    brand: "Revolver Surfboards",
+    shaper: "Revolver Surfboards",
+    model: "Performance",
+    aliases: ["performance", "revolver performance"],
+    type: "shortboard",
+    finSetup: "thruster",
+    defaultLengthFt: 5.9,
+    volumeBase: 25,
+    volumePerFt: 1.0,
+    waveRange: WAVE.performance,
+    traits: T.hpShort,
+    shaperNotes:
+      "A high-performance shortboard with refined rails for clean, punchy surf. Built for tight pocket turns and confident rail work in good-quality waves.",
+    feelSummary:
+      "Clean-surf shortboard — snappy and rail-driven.",
+  }),
+  defineModel({
+    id: "revolver-step-up",
+    brand: "Revolver Surfboards",
+    shaper: "Revolver Surfboards",
+    model: "Step Up",
+    aliases: ["step up", "stepup", "revolver step up"],
+    type: "shortboard",
+    finSetup: "thruster",
+    defaultLengthFt: 6.2,
+    volumeBase: 28,
+    volumePerFt: 0.85,
+    waveRange: WAVE.stepUp,
+    traits: T.stepUp,
+    shaperNotes:
+      "A step-up shortboard with extra length and refined rails for overhead surf. Built for hold and confidence when conditions get solid.",
+    feelSummary:
+      "Overhead step-up — hold and drive in bigger surf.",
+  }),
+  defineModel({
+    id: "revolver-fun",
+    brand: "Revolver Surfboards",
+    shaper: "Revolver Surfboards",
+    model: "Fun",
+    aliases: ["fun", "revolver fun"],
+    type: "funboard",
+    finSetup: "thruster",
+    defaultLengthFt: 6.5,
+    volumeBase: 32,
+    volumePerFt: 0.75,
+    waveRange: WAVE.daily,
+    traits: T.fun,
+    shaperNotes:
+      "A relaxed, high-volume funboard for casual sessions and softer waves. Extra width and thickness make it approachable for intermediate surfers.",
+    feelSummary:
+      "Easy funboard — high wave count and mellow turns.",
+  }),
+];

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WaveSage</string>
+    <string name="title_activity_main">WaveSage</string>
+    <string name="package_name">com.wavesage.app</string>
+    <string name="custom_url_scheme">com.wavesage.app</string>
+</resources>

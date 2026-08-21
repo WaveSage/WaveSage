@@ -1,0 +1,21 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Creates an HTTPS Web Service + 1 GB disk for accounts & wave reports.
+services:
+  - type: web
+    name: wavesage
+    runtime: docker
+    plan: starter
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WAVESAGE_DATA_DIR
+        value: /data
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+    disk:
+      name: wavesage-data
+      mountPath: /data
+      sizeGB: 1

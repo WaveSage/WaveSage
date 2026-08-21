@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+.env
+.env*.local
+data
+android
+ios
+mobile
+capacitor.config.ts
+.DS_Store
+npm-debug.log*
