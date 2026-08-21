@@ -3,7 +3,7 @@ import type { SwellFit } from "@/lib/types";
 import { fetchTideInfo } from "./tide";
 import { pickHourIndex } from "./time-index";
 import { applySpotTransform } from "./spot-transform";
-import { fetchWithTimeout } from "./fetch-timeout";
+import { fetchJsonWithRetry } from "./fetch-timeout";
 import { getPacificNowParts } from "./pacific-time";
 import {
   classifyWind,
@@ -202,12 +202,10 @@ async function fetchMarineForecast(spot: SurfSpot, forecastDays = 2) {
   });
 
   const url = `https://marine-api.open-meteo.com/v1/marine?${params}`;
-  const response = await fetchWithTimeout(url, { next: { revalidate: 1800 } });
-  if (!response.ok) {
-    throw new Error(`Marine forecast unavailable (${response.status})`);
-  }
-
-  return (await response.json()) as OpenMeteoMarineResponse;
+  return fetchJsonWithRetry<OpenMeteoMarineResponse>(
+    url,
+    "Marine forecast"
+  );
 }
 
 async function fetchSurfaceWind(spot: SurfSpot, forecastDays = 2) {
@@ -221,12 +219,28 @@ async function fetchSurfaceWind(spot: SurfSpot, forecastDays = 2) {
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetchWithTimeout(url, { next: { revalidate: 1800 } });
-  if (!response.ok) {
-    throw new Error(`Weather forecast unavailable (${response.status})`);
-  }
+  return fetchJsonWithRetry<OpenMeteoWeatherResponse>(
+    url,
+    "Weather forecast"
+  );
+}
 
-  return (await response.json()) as OpenMeteoWeatherResponse;
+const CONDITIONS_CACHE_MS = 8 * 60 * 1000;
+const conditionsCache = new Map<
+  string,
+  { conditions: SurfConditions; fetchedAt: number }
+>();
+
+function conditionsCacheKey(
+  spot: SurfSpot,
+  options?: {
+    includeTide?: boolean;
+    at?: { dateKey: string; hour: number; minute?: number };
+  }
+): string {
+  const includeTide = options?.includeTide !== false;
+  const at = options?.at;
+  return `${spot.id}:${includeTide ? "tide" : "notide"}:${at?.dateKey ?? "now"}:${at?.hour ?? "live"}`;
 }
 
 export async function fetchSurfConditions(
@@ -234,6 +248,27 @@ export async function fetchSurfConditions(
   options?: {
     includeTide?: boolean;
     /** Pacific-local hour snapshot (e.g. 9am dawn patrol). */
+    at?: { dateKey: string; hour: number; minute?: number };
+  }
+): Promise<SurfConditions> {
+  const cacheKey = conditionsCacheKey(spot, options);
+  const cached = conditionsCache.get(cacheKey);
+  if (cached && Date.now() - cached.fetchedAt < CONDITIONS_CACHE_MS) {
+    return cached.conditions;
+  }
+
+  const conditions = await fetchSurfConditionsUncached(spot, options);
+  conditionsCache.set(cacheKey, {
+    conditions,
+    fetchedAt: Date.now(),
+  });
+  return conditions;
+}
+
+async function fetchSurfConditionsUncached(
+  spot: SurfSpot,
+  options?: {
+    includeTide?: boolean;
     at?: { dateKey: string; hour: number; minute?: number };
   }
 ): Promise<SurfConditions> {
@@ -245,7 +280,7 @@ export async function fetchSurfConditions(
     fetchMarineForecast(spot, forecastDays),
     fetchSurfaceWind(spot, forecastDays),
     includeTide
-      ? fetchTideInfo(spot, { at: options?.at })
+      ? fetchTideInfo(spot, { at: options?.at }).catch(() => null)
       : Promise.resolve(null),
   ]);
   const idx = pickHourIndex(marine.hourly.time, options?.at);

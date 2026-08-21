@@ -9,6 +9,7 @@ import {
   degreesToCompass,
 } from "./wind";
 import { applySpotTransform } from "./spot-transform";
+import { fetchJsonWithRetry } from "./fetch-timeout";
 
 interface OpenMeteoMarineResponse {
   hourly: {
@@ -105,11 +106,7 @@ async function fetchMarineForecast(spot: SurfSpot) {
   });
 
   const url = `https://marine-api.open-meteo.com/v1/marine?${params}`;
-  const response = await fetch(url, { next: { revalidate: 1800 } });
-  if (!response.ok) {
-    throw new Error(`Marine forecast unavailable (${response.status})`);
-  }
-  return (await response.json()) as OpenMeteoMarineResponse;
+  return fetchJsonWithRetry<OpenMeteoMarineResponse>(url, "Marine forecast");
 }
 
 async function fetchSurfaceWind(spot: SurfSpot) {
@@ -123,11 +120,7 @@ async function fetchSurfaceWind(spot: SurfSpot) {
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-  const response = await fetch(url, { next: { revalidate: 1800 } });
-  if (!response.ok) {
-    throw new Error(`Weather forecast unavailable (${response.status})`);
-  }
-  return (await response.json()) as OpenMeteoWeatherResponse;
+  return fetchJsonWithRetry<OpenMeteoWeatherResponse>(url, "Weather forecast");
 }
 
 export async function fetchSpotForecast(spot: SurfSpot): Promise<SpotForecast> {

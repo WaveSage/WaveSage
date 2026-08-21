@@ -10,7 +10,7 @@ const QUALITY_RANK: Record<SurfConditions["quality"], number> = {
 };
 
 const REGIONAL_CACHE_MS = 2 * 60 * 1000;
-const REGIONAL_BATCH_SIZE = 8;
+const REGIONAL_BATCH_SIZE = 3;
 
 let regionalCache: { forecast: RegionalForecast; fetchedAt: number } | null =
   null;
@@ -78,7 +78,9 @@ export async function fetchRegionalConditions(
 
   regionalFetchInFlight = fetchRegionalConditionsUncached(spots)
     .then((forecast) => {
-      regionalCache = { forecast, fetchedAt: Date.now() };
+      if (forecast.conditions.length > 0) {
+        regionalCache = { forecast, fetchedAt: Date.now() };
+      }
       return forecast;
     })
     .finally(() => {

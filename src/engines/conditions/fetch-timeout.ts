@@ -12,3 +12,48 @@ export async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Fetch JSON and retry rate-limits / transient failures. Never cache error bodies. */
+export async function fetchJsonWithRetry<T>(
+  url: string,
+  label: string,
+  attempts = 4
+): Promise<T> {
+  let lastError = new Error(`${label} unavailable`);
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) {
+      await sleep(700 * 2 ** (attempt - 1));
+    }
+
+    try {
+      const response = await fetchWithTimeout(url, {
+        cache: "no-store",
+        timeoutMs: 15_000,
+      });
+
+      if (response.status === 429 || response.status >= 500) {
+        lastError = new Error(`${label} unavailable (${response.status})`);
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`${label} unavailable (${response.status})`);
+      }
+
+      return (await response.json()) as T;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("unavailable (")) {
+        const status = Number(error.message.match(/\((\d+)\)/)?.[1]);
+        if (status && status !== 429 && status < 500) throw error;
+      }
+      lastError = error instanceof Error ? error : lastError;
+    }
+  }
+
+  throw lastError;
+}
