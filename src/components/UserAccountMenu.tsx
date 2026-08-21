@@ -125,6 +125,14 @@ export function UserAccountMenu({
             >
               How to
             </button>
+            <a
+              className="account-menu-item"
+              role="menuitem"
+              href="/privacy"
+              onClick={() => setOpen(false)}
+            >
+              Privacy Policy
+            </a>
             <button
               type="button"
               className="account-menu-item account-menu-item-danger"

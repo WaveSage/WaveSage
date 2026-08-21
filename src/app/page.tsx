@@ -278,6 +278,9 @@ export default function HomePage() {
               <Link href="/signup" className="guest-auth-link primary">
                 Sign up
               </Link>
+              <Link href="/privacy" className="guest-auth-link">
+                Privacy
+              </Link>
             </div>
           )}
         </div>

@@ -96,6 +96,8 @@ export default function ForgotPasswordPage() {
       </form>
       <p className="auth-footer muted">
         <Link href="/login">Back to sign in</Link>
+        {" · "}
+        <Link href="/privacy">Privacy Policy</Link>
       </p>
     </AuthShell>
   );

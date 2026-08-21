@@ -52,6 +52,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         {" · "}
         <Link href="/">Continue as guest</Link>
       </p>
+      <p className="auth-footer muted">
+        <Link href="/privacy">Privacy Policy</Link>
+      </p>
     </AuthShell>
   );
 }

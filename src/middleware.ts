@@ -9,6 +9,7 @@ const PUBLIC_PAGES = new Set([
   "/verify-email",
   "/forgot-password",
   "/reset-password",
+  "/privacy",
 ]);
 
 function isGuestReadableApi(pathname: string, method: string): boolean {

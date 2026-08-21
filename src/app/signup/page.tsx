@@ -95,6 +95,10 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
         {" · "}
         <Link href="/">Continue as guest</Link>
       </p>
+      <p className="auth-footer muted">
+        By creating an account you agree to our{" "}
+        <Link href="/privacy">Privacy Policy</Link>.
+      </p>
     </AuthShell>
   );
 }
