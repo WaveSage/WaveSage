@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { getCoachPeriod } from "@/lib/coach-period";
 import type {
   CoachResponse,
@@ -8,6 +9,7 @@ import type {
   SurfSpot,
 } from "@/lib/types";
 import { type UserProfile } from "@/lib/auth/types";
+import { getGuestProfile, GUEST_SPOT_ID } from "@/lib/auth/guest";
 import { AppTabs, type AppTab } from "@/components/AppTabs";
 import { SagePanel } from "@/components/SagePanel";
 import {
@@ -21,11 +23,13 @@ import { UserAccountMenu } from "@/components/UserAccountMenu";
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<AppTab>("sage");
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
   const [regional, setRegional] = useState<RegionalForecast | null>(null);
   const [regionalLoading, setRegionalLoading] = useState(false);
   const [regionalError, setRegionalError] = useState<string | null>(null);
   const [selectedSpotId, setSelectedSpotId] = useState(getDefaultSelectedSpotId());
-  const [sageSpotId, setSageSpotId] = useState(getDefaultSelectedSpotId());
+  const [sageSpotId, setSageSpotId] = useState(GUEST_SPOT_ID);
   const [latestSage, setLatestSage] = useState<CoachResponse | null>(null);
   const [briefingLoading, setBriefingLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -33,66 +37,6 @@ export default function HomePage() {
   const [highlightReportId, setHighlightReportId] = useState<string | null>(
     null
   );
-
-  const loadProfile = useCallback(async () => {
-    setProfileError(null);
-    try {
-      const response = await fetch("/api/profile", {
-        signal: AbortSignal.timeout(15_000),
-      });
-      if (response.status === 401) {
-        window.location.href = "/login";
-        return null;
-      }
-      if (!response.ok) {
-        throw new Error("Could not load your profile.");
-      }
-      const data = (await response.json()) as { user: UserProfile };
-      setUser(data.user);
-      return data.user;
-    } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.name === "TimeoutError"
-            ? "Profile request timed out. The dev server may be stuck — try refreshing."
-            : error.message
-          : "Could not load your profile.";
-      setProfileError(text);
-      return null;
-    }
-  }, []);
-
-  const loadRegional = useCallback(async () => {
-    setRegionalLoading(true);
-    setRegionalError(null);
-
-    try {
-      const response = await fetch("/api/conditions/region", {
-        signal: AbortSignal.timeout(90_000),
-      });
-      const data = (await response.json()) as RegionalForecast & {
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Failed to load regional conditions");
-      }
-
-      setRegional(data);
-      return data;
-    } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.name === "TimeoutError"
-            ? "Regional conditions timed out. Try Refresh on the Spots tab."
-            : error.message
-          : "Could not load SoCal conditions.";
-      setRegionalError(text);
-      return null;
-    } finally {
-      setRegionalLoading(false);
-    }
-  }, []);
 
   const loadBriefing = useCallback(
     async (
@@ -133,6 +77,73 @@ export default function HomePage() {
     []
   );
 
+  const loadProfile = useCallback(async () => {
+    setProfileError(null);
+    try {
+      const response = await fetch("/api/profile", {
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (response.status === 401) {
+        setUser(null);
+        setGuestMode(true);
+        setSageSpotId(GUEST_SPOT_ID);
+        setSelectedSpotId(GUEST_SPOT_ID);
+        await loadBriefing(getGuestProfile(), GUEST_SPOT_ID, null);
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error("Could not load your profile.");
+      }
+      const data = (await response.json()) as { user: UserProfile };
+      setUser(data.user);
+      setGuestMode(false);
+      return data.user;
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.name === "TimeoutError"
+            ? "Profile request timed out. The server may be waking up — try refreshing."
+            : error.message
+          : "Could not load your profile.";
+      setProfileError(text);
+      return null;
+    } finally {
+      setAuthChecked(true);
+    }
+  }, [loadBriefing]);
+
+  const loadRegional = useCallback(async () => {
+    setRegionalLoading(true);
+    setRegionalError(null);
+
+    try {
+      const response = await fetch("/api/conditions/region", {
+        signal: AbortSignal.timeout(90_000),
+      });
+      const data = (await response.json()) as RegionalForecast & {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to load regional conditions");
+      }
+
+      setRegional(data);
+      return data;
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.name === "TimeoutError"
+            ? "Regional conditions timed out. Try Refresh on the Spots tab."
+            : error.message
+          : "Could not load SoCal conditions.";
+      setRegionalError(text);
+      return null;
+    } finally {
+      setRegionalLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadProfile().then((profile) => {
       if (!profile) return;
@@ -142,14 +153,15 @@ export default function HomePage() {
       setSelectedSpotId(spotId);
       setSageSpotId(spotId);
 
-      loadBriefing(profile, spotId, null);
+      void loadBriefing(profile, spotId, null);
     });
   }, [loadProfile, loadBriefing]);
 
   useEffect(() => {
     if (regional || regionalLoading) return;
-    loadRegional();
-  }, [regional, regionalLoading, loadRegional]);
+    if (guestMode) return;
+    void loadRegional();
+  }, [regional, regionalLoading, loadRegional, guestMode]);
 
   function handleSelectSpot(spot: SurfSpot) {
     setSelectedSpotId(spot.id);
@@ -174,7 +186,7 @@ export default function HomePage() {
       setSelectedSpotId(spot.id);
       setSageSpotId(spot.id);
       setActiveTab("sage");
-      loadBriefing(data.user, spot.id, regional);
+      void loadBriefing(data.user, spot.id, regional);
     } catch {
       // keep UI responsive even if save fails
     }
@@ -182,7 +194,7 @@ export default function HomePage() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    window.location.href = "/";
   }
 
   function handleProfileUpdated(next: UserProfile) {
@@ -208,8 +220,10 @@ export default function HomePage() {
   }
 
   const favoriteSpotId = user?.favoriteSpot?.id ?? null;
+  const displayUser = user ?? getGuestProfile();
 
   function handleSageSpotChange(spotId: string) {
+    if (guestMode) return;
     if (spotId === sageSpotId) return;
     setSageSpotId(spotId);
     if (user) {
@@ -217,7 +231,15 @@ export default function HomePage() {
     }
   }
 
-  if (!user) {
+  function handleTabChange(tab: AppTab) {
+    if (guestMode && tab === "spots") {
+      window.location.href = "/login?from=/";
+      return;
+    }
+    setActiveTab(tab);
+  }
+
+  if (!authChecked) {
     return (
       <main className="app-shell">
         {profileError ? (
@@ -226,19 +248,13 @@ export default function HomePage() {
             <button
               type="button"
               className="refresh-btn"
-              onClick={() => loadProfile().then((profile) => {
-                if (!profile) return;
-                const spotId =
-                  profile.favoriteSpot?.id ?? getDefaultSelectedSpotId();
-                setSelectedSpotId(spotId);
-                loadBriefing(profile, spotId, null);
-              })}
+              onClick={() => void loadProfile()}
             >
               Retry
             </button>
           </>
         ) : (
-          <p className="muted">Loading your profile...</p>
+          <p className="muted">Loading WaveSage…</p>
         )}
       </main>
     );
@@ -249,18 +265,33 @@ export default function HomePage() {
       <header className="topbar">
         <AppLogo height={72} asHeading />
         <div className="topbar-right">
-          <AppTabs active={activeTab} onChange={setActiveTab} />
-          <UserAccountMenu
-            user={user}
-            onLogout={handleLogout}
-            onProfileUpdated={handleProfileUpdated}
+          <AppTabs
+            active={activeTab}
+            onChange={handleTabChange}
+            guestMode={guestMode}
           />
+          {user ? (
+            <UserAccountMenu
+              user={user}
+              onLogout={handleLogout}
+              onProfileUpdated={handleProfileUpdated}
+            />
+          ) : (
+            <div className="guest-auth-links">
+              <Link href="/login" className="guest-auth-link">
+                Sign in
+              </Link>
+              <Link href="/signup" className="guest-auth-link primary">
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
       {activeTab === "sage" && (
         <SagePanel
-          user={user}
+          user={displayUser}
           sageSpotId={sageSpotId}
           conditions={latestSage?.conditions ?? null}
           styleOutlook={latestSage?.styleOutlook ?? null}
@@ -273,6 +304,7 @@ export default function HomePage() {
           }
           briefingLoading={briefingLoading}
           reportsRefreshKey={reportsRefreshKey}
+          guestMode={guestMode}
           onSageSpotChange={handleSageSpotChange}
           onReportSubmitted={handleReportSubmitted}
           onViewReports={handleViewReports}
@@ -280,7 +312,7 @@ export default function HomePage() {
         />
       )}
 
-      {activeTab === "spots" && (
+      {activeTab === "spots" && user ? (
         <SoCalConditions
           forecast={regional}
           loading={regionalLoading}
@@ -293,18 +325,28 @@ export default function HomePage() {
           onRefresh={loadRegional}
           onOpenReport={handleViewReports}
         />
-      )}
+      ) : null}
 
       {activeTab === "reports" && (
         <section className="panel reports-panel">
           <h2>User Reports</h2>
           <p className="muted">
-            Accepted condition photos from surfers at the break. Tap a photo in
-            Spots to jump to the full report.
+            {guestMode
+              ? "Public condition photos for Lower Trestles. Sign in to submit your own report or browse other spots."
+              : "Accepted condition photos from surfers at the break. Tap a photo in Spots to jump to the full report."}
           </p>
+          {guestMode ? (
+            <p className="guest-reports-cta">
+              <Link href="/login">Sign in</Link> or{" "}
+              <Link href="/signup">create an account</Link> to submit a User Wave
+              Report.
+            </p>
+          ) : null}
           <UserReportsGallery
             refreshKey={reportsRefreshKey}
             highlightReportId={highlightReportId}
+            spotId={guestMode ? GUEST_SPOT_ID : undefined}
+            readOnly={guestMode}
           />
         </section>
       )}

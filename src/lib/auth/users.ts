@@ -202,3 +202,55 @@ export async function updateUserProfile(
   await saveStore(store);
   return store.users[index];
 }
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function createPasswordResetForEmail(
+  email: string
+): Promise<{ token: string; user: UserRecord } | null> {
+  const store = await readStore();
+  const normalized = email.trim().toLowerCase();
+  const index = store.users.findIndex((u) => u.email === normalized);
+  if (index === -1) return null;
+
+  const token = createVerificationToken();
+  store.users[index] = {
+    ...store.users[index],
+    passwordResetToken: token,
+    passwordResetExpires: new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString(),
+  };
+  await saveStore(store);
+  return { token, user: store.users[index] };
+}
+
+export async function resetPasswordWithToken(
+  token: string,
+  newPassword: string
+): Promise<UserRecord | null> {
+  const store = await readStore();
+  const index = store.users.findIndex((u) => u.passwordResetToken === token);
+  if (index === -1) return null;
+
+  const user = store.users[index];
+  const expires = user.passwordResetExpires
+    ? Date.parse(user.passwordResetExpires)
+    : 0;
+  if (!expires || Number.isNaN(expires) || expires < Date.now()) {
+    store.users[index] = {
+      ...user,
+      passwordResetToken: undefined,
+      passwordResetExpires: undefined,
+    };
+    await saveStore(store);
+    return null;
+  }
+
+  store.users[index] = {
+    ...user,
+    passwordHash: await hashPassword(newPassword),
+    passwordResetToken: undefined,
+    passwordResetExpires: undefined,
+  };
+  await saveStore(store);
+  return store.users[index];
+}

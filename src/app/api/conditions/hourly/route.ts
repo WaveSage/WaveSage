@@ -3,6 +3,7 @@ import { fetchSurfConditions } from "@/engines/conditions";
 import { getPacificNowParts } from "@/engines/conditions/pacific-time";
 import { pacificDateKeyPlusDays } from "@/engines/coach/future-forecast";
 import { getTemplateStyleCoachResult } from "@/engines/coach/style-coach";
+import { getGuestProfile, GUEST_SPOT_ID } from "@/lib/auth/guest";
 import { getSessionUserId } from "@/lib/auth/session";
 import { findUserById } from "@/lib/auth/users";
 import { toUserProfile } from "@/lib/auth/types";
@@ -18,27 +19,37 @@ function formatHourLabel(hour: number): string {
 export async function GET(request: Request) {
   try {
     const userId = await getSessionUserId();
-    if (!userId) {
-      return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-    }
-
-    const user = await findUserById(userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found." }, { status: 404 });
-    }
-    const profile = toUserProfile(user);
-
     const { searchParams } = new URL(request.url);
-    const spotId =
-      searchParams.get("spotId") ??
-      user.favoriteSpot?.id ??
-      "tamarack";
+
+    let profile = getGuestProfile();
+    let spotId = GUEST_SPOT_ID;
+
+    if (userId) {
+      const user = await findUserById(userId);
+      if (!user) {
+        return NextResponse.json({ error: "User not found." }, { status: 404 });
+      }
+      profile = toUserProfile(user);
+      spotId =
+        searchParams.get("spotId") ??
+        user.favoriteSpot?.id ??
+        GUEST_SPOT_ID;
+    } else {
+      const requested = searchParams.get("spotId");
+      if (requested && requested !== GUEST_SPOT_ID) {
+        return NextResponse.json(
+          { error: "Sign in to view other spots." },
+          { status: 401 }
+        );
+      }
+    }
+
     const count = Math.min(
       12,
       Math.max(4, Number(searchParams.get("hours") ?? 8) || 8)
     );
 
-    const spot = getSpotById(spotId) ?? user.favoriteSpot;
+    const spot = getSpotById(spotId);
     if (!spot) {
       return NextResponse.json({ error: "Spot not found." }, { status: 404 });
     }
@@ -94,6 +105,7 @@ export async function GET(request: Request) {
       spot,
       fetchedAt: new Date().toISOString(),
       points,
+      guest: !userId,
     });
   } catch (error) {
     const message =

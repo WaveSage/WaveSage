@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
-import { getSessionUserId } from "@/lib/auth/session";
 import { readReportImage } from "@/lib/reports/storage";
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ reportId: string }> }
 ) {
-  const userId = await getSessionUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  }
-
+  // Images for accepted reports are readable by guests (Trestles preview gallery).
   const { reportId } = await context.params;
   const url = new URL(request.url);
   const thumb = url.searchParams.get("thumb") === "1";
@@ -23,7 +18,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "image/jpeg",
-      "Cache-Control": "private, max-age=3600",
+      "Cache-Control": "public, max-age=3600",
     },
   });
 }

@@ -47,6 +47,7 @@ interface SurfEngineProps {
   regionalSnapshots?: FavoriteSnapshot[];
   briefingLoading?: boolean;
   reportsRefreshKey?: number;
+  guestMode?: boolean;
   onSelectSpot: (spotId: string) => void;
   onEditSpots?: () => void;
   onReportSubmitted?: () => void;
@@ -291,6 +292,7 @@ export function SurfEngine({
   regionalSnapshots = [],
   briefingLoading,
   reportsRefreshKey = 0,
+  guestMode = false,
   onSelectSpot,
   onEditSpots,
   onReportSubmitted,
@@ -474,40 +476,49 @@ export function SurfEngine({
     <div className={`surf-engine mood-${mood}`}>
       <div className="se-atmosphere" aria-hidden />
 
-      <div className="se-rail-head">
-        <span className="se-rail-title">Your 5 spots</span>
-        {onEditSpots ? (
-          <button
-            type="button"
-            className="se-edit-spots-btn"
-            onClick={onEditSpots}
-          >
-            Edit
-          </button>
-        ) : null}
-      </div>
+      {!guestMode ? (
+        <>
+          <div className="se-rail-head">
+            <span className="se-rail-title">Your 5 spots</span>
+            {onEditSpots ? (
+              <button
+                type="button"
+                className="se-edit-spots-btn"
+                onClick={onEditSpots}
+              >
+                Edit
+              </button>
+            ) : null}
+          </div>
 
-      <div className="se-spot-rail" role="list">
-        {favorites.map((fav) => {
-          const active = fav.spot.id === sageSpotId;
-          return (
-            <button
-              key={fav.spot.id}
-              type="button"
-              role="listitem"
-              className={`se-spot-chip ${active ? "active" : ""}`}
-              onClick={() => onSelectSpot(fav.spot.id)}
-            >
-              <span className="se-spot-chip-name">{fav.spot.name}</span>
-              <span className="se-spot-chip-meta">
-                {fav.waveHeightFt != null
-                  ? `${fav.waveHeightFt} ft · ${fav.quality ?? "—"}`
-                  : "Tap for live"}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+          <div className="se-spot-rail" role="list">
+            {favorites.map((fav) => {
+              const active = fav.spot.id === sageSpotId;
+              return (
+                <button
+                  key={fav.spot.id}
+                  type="button"
+                  role="listitem"
+                  className={`se-spot-chip ${active ? "active" : ""}`}
+                  onClick={() => onSelectSpot(fav.spot.id)}
+                >
+                  <span className="se-spot-chip-name">{fav.spot.name}</span>
+                  <span className="se-spot-chip-meta">
+                    {fav.waveHeightFt != null
+                      ? `${fav.waveHeightFt} ft · ${fav.quality ?? "—"}`
+                      : "Tap for live"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <p className="se-guest-banner">
+          Preview · Lower Trestles —{" "}
+          <a href="/signup">Create an account</a> for your spots and reports.
+        </p>
+      )}
 
       <section className={`se-hero ${qualityTone(conditions.quality)}`}>
         <div className="se-hero-top">
@@ -518,15 +529,21 @@ export function SurfEngine({
               {qualityLabel(conditions.quality)} — {score.toFixed(1)}/10
             </p>
           </div>
-          <div className="se-hero-report">
-            <SubmitPhotoFlow
-              key={`${conditions.spot.id}-${reportsRefreshKey}`}
-              spotId={conditions.spot.id}
-              spotName={conditions.spot.name}
-              onSubmitted={onReportSubmitted}
-              onViewReports={onViewReports}
-            />
-          </div>
+          {!guestMode ? (
+            <div className="se-hero-report">
+              <SubmitPhotoFlow
+                key={`${conditions.spot.id}-${reportsRefreshKey}`}
+                spotId={conditions.spot.id}
+                spotName={conditions.spot.name}
+                onSubmitted={onReportSubmitted}
+                onViewReports={onViewReports}
+              />
+            </div>
+          ) : (
+            <a className="se-guest-signin-chip" href="/login">
+              Sign in to report
+            </a>
+          )}
         </div>
 
         <div className="se-gauge">

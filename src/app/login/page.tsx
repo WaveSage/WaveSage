@@ -44,8 +44,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <button type="submit">Sign in</button>
       </form>
       <p className="auth-footer muted">
+        <Link href="/forgot-password">Forgot password?</Link>
+      </p>
+      <p className="auth-footer muted">
         New here?{" "}
         <Link href="/signup">Create your profile</Link>
+        {" · "}
+        <Link href="/">Continue as guest</Link>
       </p>
     </AuthShell>
   );

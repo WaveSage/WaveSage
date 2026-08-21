@@ -137,7 +137,7 @@ export async function readReportImage(
 
 export function toGalleryItem(
   report: UserReportRecord,
-  viewerUserId: string
+  viewerUserId: string | null
 ): UserReportGalleryItem {
   return {
     id: report.id,
@@ -150,7 +150,7 @@ export function toGalleryItem(
     imageContentConfidence: report.imageContentConfidence,
     notes: report.notes,
     username: report.username,
-    isOwn: report.userId === viewerUserId,
+    isOwn: Boolean(viewerUserId) && report.userId === viewerUserId,
     imageUrl: `/api/reports/image/${report.id}`,
     thumbnailUrl: `/api/reports/image/${report.id}?thumb=1`,
   };

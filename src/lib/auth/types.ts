@@ -18,6 +18,8 @@ export interface UserRecord {
   favoriteSpotIds?: string[];
   emailVerified: boolean;
   verificationToken?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: string;
   createdAt: string;
 }
 

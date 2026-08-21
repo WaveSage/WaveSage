@@ -23,12 +23,16 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
+  overflow-x: hidden;
   background:
     radial-gradient(ellipse 80% 40% at 50% -5%, rgba(56, 160, 190, 0.2), transparent 50%),
     linear-gradient(180deg, #041018 0%, var(--bg) 40%, #082230 100%);
   color: var(--text);
   font-family: var(--font-body);
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 a {
@@ -50,6 +54,8 @@ button {
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 0.75rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .topbar {
@@ -689,14 +695,16 @@ button {
 
 .sage-panel {
   max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .sage-panel-engine {
   max-width: 720px;
+  margin: 0 auto;
   background: transparent;
   border: none;
   padding: 0;
-  margin: 0;
   box-shadow: none;
 }
 
@@ -933,7 +941,7 @@ button {
 .se-spot-name {
   margin: 0.35rem 0 0.2rem;
   font-family: var(--font-display);
-  font-size: clamp(1.85rem, 7vw, 2.6rem);
+  font-size: clamp(1.55rem, 5.5vw, 2.4rem);
   font-weight: 780;
   letter-spacing: -0.03em;
   line-height: 1.05;
@@ -1083,6 +1091,106 @@ button {
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.se-guest-banner {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid rgba(62, 198, 224, 0.28);
+  background: rgba(62, 198, 224, 0.08);
+  color: #c5e4ef;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.se-guest-banner a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.se-guest-signin-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(62, 198, 224, 0.35);
+  background: rgba(62, 198, 224, 0.12);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.guest-auth-links {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.guest-auth-link {
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.guest-auth-link.primary {
+  border-color: rgba(62, 198, 224, 0.4);
+  background: rgba(62, 198, 224, 0.16);
+  color: var(--accent);
+}
+
+.guest-reports-cta {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.guest-reports-cta a {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .se-hero {
+    padding: 1rem 0.9rem 1.15rem;
+  }
+
+  .se-spot-name {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+  }
+
+  .se-quality-line {
+    font-size: 1rem;
+  }
+
+  .se-ai-blurb,
+  .se-sage-copy,
+  .se-sage-advice {
+    font-size: 1.05rem;
+    line-height: 1.55;
+  }
+
+  .se-stat-value {
+    font-size: 1.12rem;
+  }
+
+  .se-stat-label {
+    font-size: 0.78rem;
+  }
+
+  .se-gauge-num {
+    font-size: 2.35rem;
+  }
+
+  .guest-auth-link {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
 }
 
 .se-stat-sub {
@@ -2102,6 +2210,28 @@ button {
 
 .auth-footer a,
 .verify-note a {
+  color: var(--accent);
+}
+
+.auth-success {
+  margin: 0 0 0.75rem;
+  color: #9ef5cc;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.auth-reset-link {
+  margin: 0 0 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(62, 198, 224, 0.1);
+  border: 1px solid rgba(62, 198, 224, 0.28);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.auth-reset-link a {
   color: var(--accent);
 }
 

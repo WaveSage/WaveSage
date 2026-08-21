@@ -22,6 +22,7 @@ interface SagePanelProps {
   regionalLite?: RegionalLite[];
   briefingLoading: boolean;
   reportsRefreshKey: number;
+  guestMode?: boolean;
   onSageSpotChange: (spotId: string) => void;
   onReportSubmitted: () => void;
   onViewReports: (reportId?: string) => void;
@@ -36,6 +37,7 @@ export function SagePanel({
   regionalLite = [],
   briefingLoading,
   reportsRefreshKey,
+  guestMode = false,
   onSageSpotChange,
   onReportSubmitted,
   onViewReports,
@@ -62,12 +64,13 @@ export function SagePanel({
   }, [user.favoriteSpot]);
 
   const selectedSpotIds = useMemo(() => {
+    if (guestMode) return [sageSpotId];
     const raw =
       user.favoriteSpotIds && user.favoriteSpotIds.length
         ? user.favoriteSpotIds
         : defaultQuickSpotIds;
     return Array.from(new Set(raw)).slice(0, 5);
-  }, [user.favoriteSpotIds, defaultQuickSpotIds]);
+  }, [user.favoriteSpotIds, defaultQuickSpotIds, guestMode, sageSpotId]);
 
   return (
     <section className="sage-panel sage-panel-engine">
@@ -80,13 +83,14 @@ export function SagePanel({
         regionalSnapshots={regionalSnapshots}
         briefingLoading={briefingLoading}
         reportsRefreshKey={reportsRefreshKey}
+        guestMode={guestMode}
         onSelectSpot={onSageSpotChange}
-        onEditSpots={() => setEditingQuickSpots(true)}
+        onEditSpots={guestMode ? undefined : () => setEditingQuickSpots(true)}
         onReportSubmitted={onReportSubmitted}
         onViewReports={() => onViewReports()}
       />
 
-      {editingQuickSpots ? (
+      {!guestMode && editingQuickSpots ? (
         <EditQuickSpotsModal
           user={user}
           selectedSpotIds={selectedSpotIds}

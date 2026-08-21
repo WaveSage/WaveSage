@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getGuestSpot, GUEST_SPOT_ID } from "@/lib/auth/guest";
 import { getSessionUserId } from "@/lib/auth/session";
 import { findUserById } from "@/lib/auth/users";
 import { REPORT_CONFIG } from "@/lib/reports/config";
@@ -8,14 +9,16 @@ import { validateAndStoreReport } from "@/lib/reports/validate-submission";
 
 export async function GET(request: Request) {
   const userId = await getSessionUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  }
 
   const url = new URL(request.url);
-  const spotId = url.searchParams.get("spot_id") ?? undefined;
+  let spotId = url.searchParams.get("spot_id") ?? undefined;
   const recentHours = Number(url.searchParams.get("recent_hours") ?? 24 * 7);
   const forConditions = url.searchParams.get("for_conditions") === "1";
+
+  if (!userId) {
+    // Guests may only browse Lower Trestles reports.
+    spotId = GUEST_SPOT_ID;
+  }
 
   const reports = await listReports({
     spotId,
@@ -35,6 +38,9 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     reports: reports.map((r) => toGalleryItem(r, userId)),
+    guest: !userId,
+    spotId: spotId ?? null,
+    spotName: !userId ? getGuestSpot().name : null,
   });
 }
 

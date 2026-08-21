@@ -92,6 +92,8 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
       </form>
       <p className="auth-footer muted">
         Already have an account? <Link href="/login">Sign in</Link>
+        {" · "}
+        <Link href="/">Continue as guest</Link>
       </p>
     </AuthShell>
   );

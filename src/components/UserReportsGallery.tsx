@@ -31,11 +31,16 @@ function formatWhen(iso: string): string {
 interface UserReportsGalleryProps {
   refreshKey?: number;
   highlightReportId?: string | null;
+  /** When set, only load reports for this spot (guest Trestles preview). */
+  spotId?: string;
+  readOnly?: boolean;
 }
 
 export function UserReportsGallery({
   refreshKey = 0,
   highlightReportId = null,
+  spotId,
+  readOnly = false,
 }: UserReportsGalleryProps) {
   const [reports, setReports] = useState<UserReportGalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +50,9 @@ export function UserReportsGallery({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/reports?recent_hours=168");
+      const params = new URLSearchParams({ recent_hours: "168" });
+      if (spotId) params.set("spot_id", spotId);
+      const response = await fetch(`/api/reports?${params.toString()}`);
       const data = (await response.json()) as {
         reports: UserReportGalleryItem[];
         error?: string;
@@ -59,7 +66,7 @@ export function UserReportsGallery({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [spotId]);
 
   useEffect(() => {
     void load();
@@ -89,8 +96,9 @@ export function UserReportsGallery({
   if (!reports.length) {
     return (
       <p className="muted">
-        No accepted reports yet. Submit a photo from the Sage tab while at the
-        break.
+        {readOnly
+          ? "No accepted Lower Trestles reports in the last week yet."
+          : "No accepted reports yet. Submit a photo from the Sage tab while at the break."}
       </p>
     );
   }
@@ -129,7 +137,7 @@ export function UserReportsGallery({
             <p className="muted report-source">
               User photo — {report.isOwn ? "you" : report.username}
             </p>
-            {report.isOwn && (
+            {!readOnly && report.isOwn ? (
               <button
                 type="button"
                 className="report-delete-btn"
@@ -137,7 +145,7 @@ export function UserReportsGallery({
               >
                 Delete my report
               </button>
-            )}
+            ) : null}
           </div>
         </article>
       ))}
