@@ -20,6 +20,7 @@ interface OpenMeteoMarineResponse {
     swell_wave_height?: number[];
     swell_wave_direction?: number[];
     swell_wave_period?: number[];
+    sea_surface_temperature?: number[];
   };
 }
 
@@ -194,6 +195,7 @@ async function fetchMarineForecast(spot: SurfSpot, forecastDays = 2) {
       "swell_wave_height",
       "swell_wave_direction",
       "swell_wave_period",
+      "sea_surface_temperature",
     ].join(","),
     timezone: "America/Los_Angeles",
     forecast_days: String(forecastDays),
@@ -328,6 +330,12 @@ export async function fetchSurfConditions(
     transform.modelWaveHeightFt
   );
 
+  const sstC = marine.hourly.sea_surface_temperature?.[idx];
+  const waterTempF =
+    typeof sstC === "number" && Number.isFinite(sstC)
+      ? Math.round(sstC * (9 / 5) + 32)
+      : null;
+
   return {
     spot,
     fetchedAt: new Date().toISOString(),
@@ -343,7 +351,9 @@ export async function fetchSurfConditions(
     swellDirectionDeg,
     swellDirectionLabel,
     tide,
-    summary,
+    waterTempF,
+    summary:
+      waterTempF != null ? `${summary} Water ${waterTempF}°F.` : summary,
     quality,
     spotTransform: {
       modelWaveHeightFt: transform.modelWaveHeightFt,

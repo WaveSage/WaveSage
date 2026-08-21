@@ -50,6 +50,12 @@ export function CurrentConditionsCard({
             </span>
           </div>
         )}
+        <div className="stat">
+          <span className="muted">Water temp</span>
+          <strong>
+            {conditions.waterTempF != null ? `${conditions.waterTempF}°F` : "—"}
+          </strong>
+        </div>
       </div>
 
       {!hideUserPhoto ? (

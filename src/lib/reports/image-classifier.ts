@@ -65,13 +65,23 @@ export async function classifySurfImage(
   if (oceanRatio + skyRatio >= 0.35) confidence += 0.2;
   if (oceanRatio >= 0.28 && skyRatio >= 0.05) confidence += 0.1;
 
-  if (skinRatio > 0.22 && oceanRatio < 0.12) {
+  if (skinRatio > 0.18) {
     return {
       confidence: 0.15,
       oceanRatio,
       skyRatio,
       skinRatio,
       rejectedReason: "close_up_people",
+    };
+  }
+
+  if (oceanRatio < 0.12) {
+    return {
+      confidence: 0.2,
+      oceanRatio,
+      skyRatio,
+      skinRatio,
+      rejectedReason: "not_ocean",
     };
   }
 

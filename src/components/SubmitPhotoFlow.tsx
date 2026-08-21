@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { SOCAL_SPOTS } from "@/lib/socal-spots";
-import {
-  displayCaption,
-  validateCaption,
-} from "@/lib/reports/caption";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { SOCAL_SPOTS, getSpotById } from "@/lib/socal-spots";
+import { displayCaption, validateCaption } from "@/lib/reports/caption";
+import { REPORT_CONFIG } from "@/lib/reports/config";
+import { findNearestSpot, kmToMiles, haversineKm } from "@/lib/reports/location";
 import type { ReportSubmitResponse } from "@/lib/reports/types";
 
 interface SubmitPhotoFlowProps {
@@ -24,7 +23,7 @@ interface DeviceLocation {
 async function readDeviceLocation(): Promise<DeviceLocation> {
   if (!navigator.geolocation) {
     throw new Error(
-      "Location is required. Enable location services and try again."
+      "Location is required to verify you are at the break. Enable location services and try again."
     );
   }
 
@@ -37,26 +36,67 @@ async function readDeviceLocation(): Promise<DeviceLocation> {
           timestamp: new Date(pos.timestamp).toISOString(),
         });
       },
-      () => {
+      (err) => {
+        const denied = err.code === err.PERMISSION_DENIED;
         reject(
           new Error(
-            "Location is required. Enable location services and retake at the break."
+            denied
+              ? "Location permission is required for spot verification. Enable it in Settings, then retry."
+              : "Could not read your location. Enable location services and retry at the break."
           )
         );
       },
-      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 }
+      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 30_000 }
     );
   });
 }
 
 function clientFileChecks(file: File): string | null {
-  if (!["image/jpeg", "image/png"].includes(file.type)) {
-    return "Only JPEG or PNG photos are allowed.";
+  const type = file.type.toLowerCase();
+  if (type.startsWith("video/")) {
+    return "Videos are not allowed. Take a still photo of the waves.";
   }
-  if (file.size > 8 * 1024 * 1024) {
-    return "Photo is too large (max 8 MB).";
+  if (type && !type.startsWith("image/") && type !== "application/octet-stream") {
+    return "Only photos are allowed.";
+  }
+  if (file.size > 12 * 1024 * 1024) {
+    return "Photo is too large (max 12 MB).";
   }
   return null;
+}
+
+async function fileToJpeg(file: File): Promise<File> {
+  const type = file.type.toLowerCase();
+  if (type === "image/jpeg" || type === "image/jpg" || type === "image/png") {
+    return file;
+  }
+  try {
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    const max = 1600;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.88)
+    );
+    bitmap.close();
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg") || "waves.jpg", {
+      type: "image/jpeg",
+    });
+  } catch {
+    return file;
+  }
+}
+
+function milesToSpot(lat: number, lon: number, spotId: string): number | null {
+  const spot = getSpotById(spotId);
+  if (!spot) return null;
+  return kmToMiles(haversineKm(lat, lon, spot.latitude, spot.longitude));
 }
 
 export function SubmitPhotoFlow({
@@ -65,17 +105,25 @@ export function SubmitPhotoFlow({
   onSubmitted,
   onViewReports,
 }: SubmitPhotoFlowProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const libraryRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [reportSpotId, setReportSpotId] = useState(spotId);
   const [deviceLocation, setDeviceLocation] = useState<DeviceLocation | null>(
     null
   );
+  const [locationStatus, setLocationStatus] = useState<string | null>(null);
+  const [locationChecking, setLocationChecking] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setReportSpotId(spotId);
+  }, [spotId]);
 
   const reset = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -83,35 +131,82 @@ export function SubmitPhotoFlow({
     setFile(null);
     setCaption("");
     setDeviceLocation(null);
+    setLocationStatus(null);
+    setLocationChecking(false);
     setClientError(null);
     setSuccessMessage(null);
+    setReportSpotId(spotId);
     setOpen(false);
-  }, [previewUrl]);
+  }, [previewUrl, spotId]);
+
+  async function applyLocation(location: DeviceLocation, preferredSpotId: string) {
+    setDeviceLocation(location);
+    const nearest = findNearestSpot(location.lat, location.lon);
+    if (!nearest) {
+      setLocationStatus(null);
+      setClientError("Could not match your location to a WaveSage spot.");
+      return;
+    }
+
+    if (nearest.miles <= REPORT_CONFIG.distanceThresholdMiles) {
+      setReportSpotId(nearest.spot.id);
+      setLocationStatus(
+        `Spot verified: ${nearest.spot.name} (${nearest.miles.toFixed(1)} mi away).`
+      );
+      setClientError(null);
+      return;
+    }
+
+    const chosenMiles = milesToSpot(location.lat, location.lon, preferredSpotId);
+    setLocationStatus(
+      `Closest listed break is ${nearest.spot.name} (${nearest.miles.toFixed(1)} mi). You must be within ${REPORT_CONFIG.distanceThresholdMiles} miles to submit.`
+    );
+    if (chosenMiles != null && chosenMiles > REPORT_CONFIG.distanceThresholdMiles) {
+      setClientError(
+        `Location is ${chosenMiles.toFixed(1)} miles from the selected spot. Walk to the break and retry location.`
+      );
+    }
+  }
+
+  async function refreshLocation(preferredSpotId: string) {
+    setLocationChecking(true);
+    setClientError(null);
+    try {
+      const location = await readDeviceLocation();
+      await applyLocation(location, preferredSpotId);
+    } catch (error) {
+      setDeviceLocation(null);
+      setLocationStatus(null);
+      setClientError(
+        error instanceof Error ? error.message : "Location required for spot verification."
+      );
+    } finally {
+      setLocationChecking(false);
+    }
+  }
 
   async function handlePick(selected: File) {
     setClientError(null);
     setSuccessMessage(null);
+    setCaption("");
+    setDeviceLocation(null);
+    setLocationStatus("Checking you are at the break…");
+    setReportSpotId(spotId);
 
     const fileError = clientFileChecks(selected);
     if (fileError) {
       setClientError(fileError);
+      setOpen(true);
       return;
     }
 
-    try {
-      const location = await readDeviceLocation();
-      setDeviceLocation(location);
-    } catch (error) {
-      setClientError(
-        error instanceof Error ? error.message : "Location required."
-      );
-      return;
-    }
-
+    const jpeg = await fileToJpeg(selected);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(selected));
-    setFile(selected);
+    setPreviewUrl(URL.createObjectURL(jpeg));
+    setFile(jpeg);
     setOpen(true);
+
+    await refreshLocation(spotId);
   }
 
   function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -120,12 +215,29 @@ export function SubmitPhotoFlow({
     event.target.value = "";
   }
 
+  const reportSpot = getSpotById(reportSpotId);
+  const reportSpotName = reportSpot?.name ?? spotName;
+  const distanceMiles =
+    deviceLocation != null
+      ? milesToSpot(deviceLocation.lat, deviceLocation.lon, reportSpotId)
+      : null;
+  const locationOk =
+    distanceMiles != null &&
+    distanceMiles <= REPORT_CONFIG.distanceThresholdMiles;
+
   async function handleSubmit() {
-    if (!file || !deviceLocation) return;
+    if (!file) return;
 
     const captionCheck = validateCaption(caption);
     if (!captionCheck.ok) {
       setClientError(captionCheck.error ?? "Invalid caption.");
+      return;
+    }
+
+    if (!deviceLocation || !locationOk) {
+      setClientError(
+        "Spot verification failed. Enable location at the break, then tap Retry location."
+      );
       return;
     }
 
@@ -136,7 +248,7 @@ export function SubmitPhotoFlow({
       const form = new FormData();
       form.append("image_file", file);
       form.append("caption", captionCheck.normalized);
-      form.append("spot_id", spotId);
+      form.append("spot_id", reportSpotId);
       form.append("device_lat", String(deviceLocation.lat));
       form.append("device_lon", String(deviceLocation.lon));
       form.append("device_ts", deviceLocation.timestamp);
@@ -160,7 +272,7 @@ export function SubmitPhotoFlow({
       }
 
       setSuccessMessage(
-        `Report submitted — thanks! Your photo and caption have been added for ${spotName}.`
+        `Report submitted. Your wave photo and description are saved under ${reportSpotName}.`
       );
       onSubmitted?.();
     } catch (error) {
@@ -173,21 +285,34 @@ export function SubmitPhotoFlow({
   }
 
   const captionPreview = validateCaption(caption);
+  const canSubmit =
+    Boolean(file) &&
+    captionPreview.ok &&
+    locationOk &&
+    !submitting &&
+    !locationChecking;
 
   return (
     <>
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
-        accept="image/jpeg,image/png"
+        accept="image/*"
         capture="environment"
+        hidden
+        onChange={onFileChange}
+      />
+      <input
+        ref={libraryRef}
+        type="file"
+        accept="image/*"
         hidden
         onChange={onFileChange}
       />
       <button
         type="button"
         className="submit-photo-btn"
-        onClick={() => inputRef.current?.click()}
+        onClick={() => cameraRef.current?.click()}
       >
         <svg
           className="submit-photo-icon"
@@ -210,9 +335,11 @@ export function SubmitPhotoFlow({
       {open && (
         <div className="photo-modal-backdrop" role="dialog" aria-modal="true">
           <div className="photo-modal panel">
-            <h3>Submit conditions photo</h3>
-            <p className="muted">
-              {spotName} · photo must be taken within 2 miles of the break
+            <h3>Submit a wave report</h3>
+            <p className="muted photo-hint">
+              Photo must show the waves at the break — no selfies, parking lots,
+              or people close-up. We verify you are within{" "}
+              {REPORT_CONFIG.distanceThresholdMiles} miles of the spot.
             </p>
 
             {previewUrl && (
@@ -239,23 +366,64 @@ export function SubmitPhotoFlow({
               </>
             ) : (
               <>
+                <label className="photo-spot-picker">
+                  Spot
+                  <select
+                    value={reportSpotId}
+                    onChange={(e) => setReportSpotId(e.target.value)}
+                  >
+                    {SOCAL_SPOTS.map((spot) => (
+                      <option key={spot.id} value={spot.id}>
+                        {spot.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <p className={`photo-location-status ${locationOk ? "ok" : ""}`}>
+                  {locationChecking
+                    ? "Checking GPS…"
+                    : locationStatus ??
+                      "Location is required to verify you are at this break."}
+                  {distanceMiles != null
+                    ? ` · ${distanceMiles.toFixed(1)} mi from ${reportSpotName}`
+                    : ""}
+                </p>
+                <button
+                  type="button"
+                  className="photo-retry-location"
+                  onClick={() => void refreshLocation(reportSpotId)}
+                  disabled={locationChecking || submitting}
+                >
+                  {locationChecking ? "Checking location…" : "Retry location"}
+                </button>
+
                 <label className="photo-caption-label">
-                  Caption (optional, max 140 chars)
+                  Current conditions (optional, max {REPORT_CONFIG.captionMaxLength}{" "}
+                  chars)
                   <textarea
                     value={caption}
-                    maxLength={160}
+                    maxLength={REPORT_CONFIG.captionMaxLength + 20}
                     rows={3}
                     placeholder="Chest-high and clean, light offshore..."
                     onChange={(e) => setCaption(e.target.value)}
                   />
                 </label>
                 <p className="muted photo-caption-meta">
-                  {caption.length}/140 · {displayCaption(captionPreview.normalized)}
+                  {caption.length}/{REPORT_CONFIG.captionMaxLength} ·{" "}
+                  {displayCaption(captionPreview.normalized)}
                 </p>
 
                 {clientError && <p className="photo-error">{clientError}</p>}
 
                 <div className="photo-modal-actions">
+                  <button
+                    type="button"
+                    onClick={() => libraryRef.current?.click()}
+                    disabled={submitting}
+                  >
+                    Choose photo
+                  </button>
                   <button type="button" onClick={reset} disabled={submitting}>
                     Cancel
                   </button>
@@ -263,9 +431,9 @@ export function SubmitPhotoFlow({
                     type="button"
                     className="submit-photo-btn"
                     onClick={() => void handleSubmit()}
-                    disabled={submitting || !captionPreview.ok}
+                    disabled={!canSubmit}
                   >
-                    {submitting ? "Submitting..." : "Submit"}
+                    {submitting ? "Submitting..." : "Submit report"}
                   </button>
                 </div>
               </>

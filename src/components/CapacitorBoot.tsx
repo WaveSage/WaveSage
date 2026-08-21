@@ -19,6 +19,7 @@ export function CapacitorBoot() {
         if (!cancelled) {
           await StatusBar.setStyle({ style: Style.Dark });
           await StatusBar.setBackgroundColor({ color: "#0b1c2c" });
+          await StatusBar.setOverlaysWebView({ overlay: false });
         }
       } catch {
         // plugin may be unavailable outside a native build

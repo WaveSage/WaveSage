@@ -572,50 +572,64 @@ export function SurfEngine({
         </p>
 
         <div className="se-stat-grid">
-          <div className="se-stat">
-            <span className="se-stat-icon" aria-hidden>
-              ≈
-            </span>
-            <span className="se-stat-label">Wave height</span>
-            <strong className="se-stat-value">
-              {formatHeightRange(conditions.waveHeightFt)}
-            </strong>
+          <div className="se-stat-row se-stat-row-2">
+            <div className="se-stat">
+              <span className="se-stat-icon" aria-hidden>
+                ≈
+              </span>
+              <span className="se-stat-label">Wave height</span>
+              <strong className="se-stat-value">
+                {formatHeightRange(conditions.waveHeightFt)}
+              </strong>
+            </div>
+            <div className="se-stat">
+              <span className="se-stat-icon" aria-hidden>
+                ↗
+              </span>
+              <span className="se-stat-label">Swell</span>
+              <strong className="se-stat-value">
+                {conditions.swellDirectionLabel} {conditions.swellDirectionDeg}°
+              </strong>
+              <span className="se-stat-sub">
+                @ {conditions.swellPeriodSec || conditions.wavePeriodSec}s
+              </span>
+            </div>
           </div>
-          <div className="se-stat">
-            <span className="se-stat-icon" aria-hidden>
-              ↗
-            </span>
-            <span className="se-stat-label">Swell</span>
-            <strong className="se-stat-value">
-              {conditions.swellDirectionLabel} {conditions.swellDirectionDeg}°
-            </strong>
-            <span className="se-stat-sub">
-              @ {conditions.swellPeriodSec || conditions.wavePeriodSec}s
-            </span>
-          </div>
-          <div className="se-stat">
-            <span className="se-stat-icon" aria-hidden>
-              ∿
-            </span>
-            <span className="se-stat-label">Wind</span>
-            <strong className="se-stat-value">
-              {conditions.windSpeedMph} mph {conditions.windDirectionLabel}
-            </strong>
-            <span className="se-stat-sub">
-              {windTypeHeadline(conditions.windType)}
-            </span>
-          </div>
-          <div className="se-stat">
-            <span className="se-stat-icon" aria-hidden>
-              ⌇
-            </span>
-            <span className="se-stat-label">Tide</span>
-            <strong className="se-stat-value">
-              {conditions.tide ? `${conditions.tide.heightFt} ft` : "—"}
-            </strong>
-            <span className="se-stat-sub">
-              {conditions.tide?.trend ?? "unavailable"}
-            </span>
+          <div className="se-stat-row se-stat-row-3">
+            <div className="se-stat">
+              <span className="se-stat-icon" aria-hidden>
+                ∿
+              </span>
+              <span className="se-stat-label">Wind</span>
+              <strong className="se-stat-value">
+                {conditions.windSpeedMph} mph {conditions.windDirectionLabel}
+              </strong>
+              <span className="se-stat-sub">
+                {windTypeHeadline(conditions.windType)}
+              </span>
+            </div>
+            <div className="se-stat">
+              <span className="se-stat-icon" aria-hidden>
+                ⌇
+              </span>
+              <span className="se-stat-label">Tide</span>
+              <strong className="se-stat-value">
+                {conditions.tide ? `${conditions.tide.heightFt} ft` : "—"}
+              </strong>
+              <span className="se-stat-sub">
+                {conditions.tide?.trend ?? "unavailable"}
+              </span>
+            </div>
+            <div className="se-stat">
+              <span className="se-stat-icon" aria-hidden>
+                °
+              </span>
+              <span className="se-stat-label">Water temp</span>
+              <strong className="se-stat-value">
+                {conditions.waterTempF != null ? `${conditions.waterTempF}°F` : "—"}
+              </strong>
+              <span className="se-stat-sub">sea surface</span>
+            </div>
           </div>
         </div>
       </section>

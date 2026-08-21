@@ -5,9 +5,9 @@ import { findUserById } from "@/lib/auth/users";
 import { REPORT_CONFIG } from "@/lib/reports/config";
 import { listReports, toGalleryItem } from "@/lib/reports/storage";
 import { selectReportForConditions } from "@/lib/reports/selection";
-import { validateAndStoreReport } from "@/lib/reports/validate-submission";
 
 export async function GET(request: Request) {
+  try {
   const userId = await getSessionUserId();
 
   const url = new URL(request.url);
@@ -42,6 +42,11 @@ export async function GET(request: Request) {
     spotId: spotId ?? null,
     spotName: !userId ? getGuestSpot().name : null,
   });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not load reports.";
+    return NextResponse.json({ error: message, reports: [] }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -75,6 +80,10 @@ export async function POST(request: Request) {
   const deviceLon = Number(form.get("device_lon"));
   const exifLat = Number(form.get("exif_lat"));
   const exifLon = Number(form.get("exif_lon"));
+
+  const { validateAndStoreReport } = await import(
+    "@/lib/reports/validate-submission"
+  );
 
   const result = await validateAndStoreReport({
     imageBuffer: Buffer.from(await imageFile.arrayBuffer()),

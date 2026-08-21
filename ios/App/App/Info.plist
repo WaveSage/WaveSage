@@ -47,5 +47,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>WaveSage uses the camera so you can photograph the waves at the break for a User Wave Report.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>WaveSage can use a photo from your library when you submit a User Wave Report of current surf conditions.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WaveSage uses your location only when you submit a User Wave Report, to verify you are at the selected surf spot.</string>
 </dict>
 </plist>

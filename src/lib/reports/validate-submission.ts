@@ -122,7 +122,8 @@ export async function validateAndStoreReport(
 
   if (
     !verdict.accept ||
-    classification.rejectedReason === "close_up_people"
+    classification.rejectedReason === "close_up_people" ||
+    classification.rejectedReason === "not_ocean"
   ) {
     return reject(
       "image_not_waves",

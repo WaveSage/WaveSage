@@ -19,6 +19,8 @@ import {
 import { AppLogo } from "@/components/AppLogo";
 import { UserReportsGallery } from "@/components/UserReportsGallery";
 import { UserAccountMenu } from "@/components/UserAccountMenu";
+import { SubmitPhotoFlow } from "@/components/SubmitPhotoFlow";
+import { getSpotById } from "@/lib/socal-spots";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<AppTab>("sage");
@@ -258,12 +260,8 @@ export default function HomePage() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <AppLogo height={72} asHeading />
-        <div className="topbar-right">
-          <AppTabs
-            active={activeTab}
-            onChange={handleTabChange}
-          />
+        <div className="topbar-brand">
+          <AppLogo height={72} asHeading />
           {user ? (
             <UserAccountMenu
               user={user}
@@ -284,6 +282,7 @@ export default function HomePage() {
             </div>
           )}
         </div>
+        <AppTabs active={activeTab} onChange={handleTabChange} />
       </header>
 
       {activeTab === "sage" && (
@@ -339,7 +338,20 @@ export default function HomePage() {
               <Link href="/signup">create an account</Link> to submit a User Wave
               Report.
             </p>
-          ) : null}
+          ) : (
+            <div className="reports-submit-row">
+              <p className="muted">
+                Take a photo of the waves at the break, add a short description,
+                and we will verify you are on-site.
+              </p>
+              <SubmitPhotoFlow
+                spotId={sageSpotId}
+                spotName={getSpotById(sageSpotId)?.name ?? "your spot"}
+                onSubmitted={handleReportSubmitted}
+                onViewReports={handleViewReports}
+              />
+            </div>
+          )}
           <UserReportsGallery
             refreshKey={reportsRefreshKey}
             highlightReportId={highlightReportId}

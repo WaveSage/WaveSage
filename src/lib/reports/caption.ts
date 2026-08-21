@@ -2,15 +2,50 @@ import { REPORT_CONFIG } from "./config";
 
 const PROFANITY = [
   "fuck",
+  "fucker",
+  "fucking",
   "shit",
+  "shitty",
+  "bullshit",
   "bitch",
   "asshole",
+  "asswipe",
+  "dumbass",
+  "dipshit",
   "damn",
+  "goddamn",
   "cunt",
   "dick",
+  "dickhead",
   "pussy",
   "bastard",
+  "motherfucker",
+  "cock",
+  "twat",
+  "wank",
+  "bollocks",
+  "slut",
+  "whore",
+  "piss",
+  "tits",
+  "fag",
+  "faggot",
+  "nigger",
+  "retard",
 ];
+
+function foldLeetspeak(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[@àáâä]/g, "a")
+    .replace(/0/g, "o")
+    .replace(/[1!|]/g, "i")
+    .replace(/3/g, "e")
+    .replace(/\$/g, "s")
+    .replace(/5/g, "s")
+    .replace(/7/g, "t")
+    .replace(/[^a-z]+/g, " ");
+}
 
 const URL_RE =
   /\b(https?:\/\/|www\.|[a-z0-9-]+\.(com|net|org|io|co|me|tv|ly))\b/i;
@@ -68,9 +103,9 @@ export function validateCaption(raw: string): CaptionValidation {
     };
   }
 
-  const lower = normalized.toLowerCase();
+  const folded = foldLeetspeak(normalized);
   for (const word of PROFANITY) {
-    if (new RegExp(`\\b${word}\\b`, "i").test(lower)) {
+    if (new RegExp(`\\b${word}\\b`, "i").test(folded)) {
       return {
         ok: false,
         normalized,

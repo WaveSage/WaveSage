@@ -103,6 +103,8 @@ export interface SurfConditions {
   swellDirectionDeg: number;
   swellDirectionLabel: string;
   tide: TideInfo | null;
+  /** Sea surface temperature in Fahrenheit, when the marine model provides it. */
+  waterTempF: number | null;
   summary: string;
   quality: "poor" | "fair" | "good" | "epic";
   /** Spot-specific adjustment from model forecast to break-aware surf. */

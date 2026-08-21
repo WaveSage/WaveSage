@@ -1,6 +1,7 @@
+import type { SurfSpot } from "@/lib/types";
+import { getSpotById, SOCAL_SPOTS } from "@/lib/socal-spots";
 import { REPORT_CONFIG } from "./config";
 import type { GpsSource } from "./types";
-import { getSpotById } from "@/lib/socal-spots";
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -21,6 +22,34 @@ export function haversineKm(
 
 export function kmToMiles(km: number): number {
   return Math.round(km * 0.621371 * 100) / 100;
+}
+
+export function findNearestSpot(
+  latitude: number,
+  longitude: number
+): { spot: SurfSpot; miles: number } | null {
+  if (SOCAL_SPOTS.length === 0) return null;
+
+  const first = SOCAL_SPOTS[0];
+  if (!first) return null;
+  let nearest = first;
+  let bestMiles = kmToMiles(
+    haversineKm(latitude, longitude, nearest.latitude, nearest.longitude)
+  );
+
+  for (let i = 1; i < SOCAL_SPOTS.length; i++) {
+    const spot = SOCAL_SPOTS[i];
+    if (!spot) continue;
+    const miles = kmToMiles(
+      haversineKm(latitude, longitude, spot.latitude, spot.longitude)
+    );
+    if (miles < bestMiles) {
+      nearest = spot;
+      bestMiles = miles;
+    }
+  }
+
+  return { spot: nearest, miles: bestMiles };
 }
 
 export interface ResolvedLocation {

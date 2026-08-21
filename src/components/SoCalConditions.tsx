@@ -187,6 +187,7 @@ export function SoCalConditions({
             {selected.swellDirectionLabel} · {selected.windDirectionLabel}{" "}
             {selected.windSpeedMph} mph
             {selected.windType !== "unknown" ? ` · ${selected.windType}` : ""}
+            {selected.waterTempF != null ? ` · water ${selected.waterTempF}°F` : ""}
             {selected.spotTransform
               ? ` · ${selected.spotTransform.breakType} · swell ${selected.spotTransform.swellFit}`
               : ""}
