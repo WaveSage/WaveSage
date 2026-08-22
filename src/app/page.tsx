@@ -52,7 +52,7 @@ export default function HomePage() {
         const response = await fetch("/api/briefing", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(30_000),
+          signal: AbortSignal.timeout(60_000),
           body: JSON.stringify({
             spotId,
             regionalConditions: regionalData?.conditions,
@@ -161,7 +161,10 @@ export default function HomePage() {
 
   useEffect(() => {
     if (regional || regionalLoading) return;
-    void loadRegional();
+    const timer = window.setTimeout(() => {
+      void loadRegional();
+    }, 2500);
+    return () => window.clearTimeout(timer);
   }, [regional, regionalLoading, loadRegional]);
 
   function handleSelectSpot(spot: SurfSpot) {

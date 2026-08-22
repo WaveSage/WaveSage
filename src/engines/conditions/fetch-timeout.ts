@@ -17,17 +17,29 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+let openMeteoQueue: Promise<void> = Promise.resolve();
+
+function enqueueOpenMeteo<T>(task: () => Promise<T>): Promise<T> {
+  const run = openMeteoQueue.then(task, task);
+  openMeteoQueue = run.then(
+    () => sleep(300),
+    () => sleep(300)
+  );
+  return run;
+}
+
 /** Fetch JSON and retry rate-limits / transient failures. Never cache error bodies. */
 export async function fetchJsonWithRetry<T>(
   url: string,
   label: string,
-  attempts = 4
+  attempts = 5
 ): Promise<T> {
+  return enqueueOpenMeteo(async () => {
   let lastError = new Error(`${label} unavailable`);
 
   for (let attempt = 0; attempt < attempts; attempt++) {
     if (attempt > 0) {
-      await sleep(700 * 2 ** (attempt - 1));
+      await sleep(900 * 2 ** (attempt - 1));
     }
 
     try {
@@ -56,4 +68,5 @@ export async function fetchJsonWithRetry<T>(
   }
 
   throw lastError;
+  });
 }

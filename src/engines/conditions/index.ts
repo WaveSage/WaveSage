@@ -276,13 +276,16 @@ async function fetchSurfConditionsUncached(
   const todayKey = getPacificNowParts().dateKey;
   const forecastDays =
     options?.at && options.at.dateKey !== todayKey ? 5 : 2;
-  const [marine, weather, tide] = await Promise.all([
-    fetchMarineForecast(spot, forecastDays),
-    fetchSurfaceWind(spot, forecastDays),
-    includeTide
-      ? fetchTideInfo(spot, { at: options?.at }).catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  const marine = await fetchMarineForecast(spot, forecastDays);
+  let weather: OpenMeteoWeatherResponse;
+  try {
+    weather = await fetchSurfaceWind(spot, forecastDays);
+  } catch {
+    weather = { hourly: { time: marine.hourly.time } };
+  }
+  const tide = includeTide
+    ? await fetchTideInfo(spot, { at: options?.at }).catch(() => null)
+    : null;
   const idx = pickHourIndex(marine.hourly.time, options?.at);
   const windIdx = pickHourIndex(weather.hourly.time, options?.at);
 

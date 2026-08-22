@@ -10,7 +10,7 @@ const QUALITY_RANK: Record<SurfConditions["quality"], number> = {
 };
 
 const REGIONAL_CACHE_MS = 2 * 60 * 1000;
-const REGIONAL_BATCH_SIZE = 3;
+const REGIONAL_BATCH_SIZE = 2;
 
 let regionalCache: { forecast: RegionalForecast; fetchedAt: number } | null =
   null;
