@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import L from "leaflet";
-import type { SurfConditions } from "@/lib/types";
+import type { SurfConditions, SurfSpot } from "@/lib/types";
 import "leaflet/dist/leaflet.css";
 
 function qualityColor(quality: SurfConditions["quality"]): string {
@@ -28,12 +28,14 @@ function createSpotIcon(color: string, selected: boolean): L.DivIcon {
 }
 
 interface SpotsMapProps {
+  spots: SurfSpot[];
   conditions: SurfConditions[];
   selectedSpotId: string;
   onSelectSpot: (spotId: string) => void;
 }
 
 export function SpotsMap({
+  spots,
   conditions,
   selectedSpotId,
   onSelectSpot,
@@ -78,33 +80,44 @@ export function SpotsMap({
 
     const bounds: L.LatLngTuple[] = [];
 
-    for (const item of conditions) {
-      const { spot } = item;
+    const liveById = new Map(conditions.map((item) => [item.spot.id, item]));
+
+    for (const spot of spots) {
       const lat = spot.latitude;
       const lng = spot.longitude;
       if (lat == null || lng == null) continue;
 
+      const item = liveById.get(spot.id);
       const latlng: L.LatLngTuple = [lat, lng];
       bounds.push(latlng);
 
       const selected = spot.id === selectedSpotId;
       const marker = L.marker(latlng, {
-        icon: createSpotIcon(qualityColor(item.quality), selected),
+        icon: createSpotIcon(
+          item ? qualityColor(item.quality) : "#64748b",
+          selected
+        ),
         title: spot.name,
         keyboard: true,
       });
 
-      const windLabel =
-        item.windType !== "unknown"
+      const windLabel = item
+        ? item.windType !== "unknown"
           ? `${item.windType} ${item.windDirectionLabel}`
-          : item.windDirectionLabel;
+          : item.windDirectionLabel
+        : "live data loading";
 
       marker.bindPopup(
-        `<div class="spots-map-popup">
+        item
+          ? `<div class="spots-map-popup">
           <strong>${spot.name}</strong>
           <span class="spots-map-popup-quality ${item.quality}">${item.quality}</span>
           <p>${item.waveHeightFt} ft @ ${item.wavePeriodSec}s</p>
           <p>${windLabel} ${item.windSpeedMph} mph</p>
+        </div>`
+          : `<div class="spots-map-popup">
+          <strong>${spot.name}</strong>
+          <p>Live conditions loading…</p>
         </div>`
       );
 
@@ -120,7 +133,7 @@ export function SpotsMap({
     if (bounds.length > 0) {
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 10 });
     }
-  }, [conditions, selectedSpotId]);
+  }, [spots, conditions, selectedSpotId]);
 
   useEffect(() => {
     const map = mapRef.current;

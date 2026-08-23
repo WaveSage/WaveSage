@@ -602,10 +602,14 @@ export function SurfEngine({
               </span>
               <span className="se-stat-label">Wind</span>
               <strong className="se-stat-value">
-                {conditions.windSpeedMph} mph {conditions.windDirectionLabel}
+                {conditions.windType === "unknown"
+                  ? "—"
+                  : `${conditions.windSpeedMph} mph ${conditions.windDirectionLabel}`}
               </strong>
               <span className="se-stat-sub">
-                {windTypeHeadline(conditions.windType)}
+                {conditions.windType === "unknown"
+                  ? "checking NWS"
+                  : windTypeHeadline(conditions.windType)}
               </span>
             </div>
             <div className="se-stat">
@@ -767,7 +771,9 @@ export function SurfEngine({
             {windTypeHeadline(conditions.windType)}
           </p>
           <p className="se-wind-nums">
-            {conditions.windSpeedMph} mph {conditions.windDirectionLabel}
+            {conditions.windType === "unknown"
+              ? "Wind data catching up"
+              : `${conditions.windSpeedMph} mph ${conditions.windDirectionLabel}`}
           </p>
           <div className="se-wind-arrows" aria-hidden>
             <span className="se-wind-particle" />

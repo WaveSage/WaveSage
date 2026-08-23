@@ -4,6 +4,7 @@ import { fetchTideInfo } from "./tide";
 import { pickHourIndex } from "./time-index";
 import { applySpotTransform } from "./spot-transform";
 import { fetchJsonWithRetry } from "./fetch-timeout";
+import { fetchNwsWind } from "./nws-wind";
 import { getPacificNowParts } from "./pacific-time";
 import {
   classifyWind,
@@ -208,7 +209,13 @@ async function fetchMarineForecast(spot: SurfSpot, forecastDays = 2) {
   );
 }
 
-async function fetchSurfaceWind(spot: SurfSpot, forecastDays = 2) {
+function weatherHasWind(weather: OpenMeteoWeatherResponse): boolean {
+  return Boolean(
+    weather.hourly.wind_speed_10m?.some((value) => value != null)
+  );
+}
+
+async function fetchOpenMeteoWind(spot: SurfSpot, forecastDays = 2) {
   const params = new URLSearchParams({
     latitude: String(spot.latitude),
     longitude: String(spot.longitude),
@@ -221,8 +228,34 @@ async function fetchSurfaceWind(spot: SurfSpot, forecastDays = 2) {
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
   return fetchJsonWithRetry<OpenMeteoWeatherResponse>(
     url,
-    "Weather forecast"
+    "Weather forecast",
+    1
   );
+}
+
+async function fetchSurfaceWind(
+  spot: SurfSpot,
+  forecastDays = 2
+): Promise<OpenMeteoWeatherResponse> {
+  try {
+    const openMeteo = await fetchOpenMeteoWind(spot, forecastDays);
+    if (weatherHasWind(openMeteo)) return openMeteo;
+  } catch {
+    // Render often gets Open-Meteo 429s; NWS is the fallback for US spots.
+  }
+
+  const nws = await fetchNwsWind(spot);
+  if (!nws) {
+    return { hourly: { time: [] } };
+  }
+
+  return {
+    hourly: {
+      time: [new Date().toISOString()],
+      wind_speed_10m: [nws.speedMph],
+      wind_direction_10m: [nws.directionDeg],
+    },
+  };
 }
 
 const CONDITIONS_CACHE_MS = 8 * 60 * 1000;
@@ -278,9 +311,7 @@ async function fetchSurfConditionsUncached(
     options?.at && options.at.dateKey !== todayKey ? 5 : 2;
   const [marine, weatherResult, tide] = await Promise.all([
     fetchMarineForecast(spot, forecastDays),
-    fetchSurfaceWind(spot, forecastDays).catch(
-      (): OpenMeteoWeatherResponse => ({ hourly: { time: [] } })
-    ),
+    fetchSurfaceWind(spot, forecastDays),
     includeTide
       ? fetchTideInfo(spot, { at: options?.at }).catch(() => null)
       : Promise.resolve(null),
@@ -309,13 +340,19 @@ async function fetchSurfConditionsUncached(
   );
   const waveHeightFt = modelWaveHeightFt;
   const waveDirectionDeg = Math.round(marine.hourly.wave_direction?.[idx] ?? 0);
-  const windSpeedMph =
-    Math.round((weather.hourly.wind_speed_10m?.[windIdx] ?? 0) * 10) / 10;
-  const windDirectionDeg = Math.round(
-    weather.hourly.wind_direction_10m?.[windIdx] ?? 0
-  );
-  const windDirectionLabel = degreesToCompass(windDirectionDeg);
-  const windType = classifyWind(windDirectionDeg, spot.shoreBearingDeg);
+  const windMissing = weather.hourly.wind_speed_10m?.[windIdx] == null;
+  const windSpeedMph = windMissing
+    ? 0
+    : Math.round((weather.hourly.wind_speed_10m?.[windIdx] ?? 0) * 10) / 10;
+  const windDirectionDeg = windMissing
+    ? 0
+    : Math.round(weather.hourly.wind_direction_10m?.[windIdx] ?? 0);
+  const windDirectionLabel = windMissing
+    ? "—"
+    : degreesToCompass(windDirectionDeg);
+  const windType = windMissing
+    ? "unknown"
+    : classifyWind(windDirectionDeg, spot.shoreBearingDeg);
   const swellHeightFt = metersToFeet(
     marine.hourly.swell_wave_height?.[idx] ?? waveHeightFt / METERS_TO_FEET
   );

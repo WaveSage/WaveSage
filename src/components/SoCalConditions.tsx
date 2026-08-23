@@ -90,24 +90,26 @@ export function SoCalConditions({
 
   const handleMapSelect = useCallback(
     (spotId: string) => {
-      const item = forecast?.conditions.find((c) => c.spot.id === spotId);
-      if (!item) return;
-      onSelectSpot(item.spot);
+      const live = forecast?.conditions.find((c) => c.spot.id === spotId);
+      const catalog = SOCAL_SPOTS.find((spot) => spot.id === spotId);
+      if (live) {
+        onSelectSpot(live.spot);
+      } else if (catalog) {
+        onSelectSpot(catalog);
+      }
       setExpandedSpotId(spotId);
     },
     [forecast?.conditions, onSelectSpot]
   );
 
-  if (loading && !forecast) {
-    return (
-      <section className="panel socal-panel">
-        <h2>Spots</h2>
-        <p className="muted">Loading live conditions across SoCal beaches…</p>
-      </section>
-    );
-  }
+  const liveCount = forecast?.conditions.length ?? 0;
+  const selected =
+    forecast?.conditions.find((c) => c.spot.id === expandedSpotId) ??
+    forecast?.conditions.find((c) => c.spot.id === selectedSpotId) ??
+    null;
+  const best = forecast?.conditions[0] ?? null;
 
-  if (error) {
+  if (error && !forecast) {
     return (
       <section className="panel socal-panel">
         <h2>Spots</h2>
@@ -119,22 +121,23 @@ export function SoCalConditions({
     );
   }
 
-  if (!forecast?.conditions.length) return null;
-
-  const best = forecast.conditions[0];
-  const selected =
-    forecast.conditions.find((c) => c.spot.id === expandedSpotId) ??
-    forecast.conditions.find((c) => c.spot.id === selectedSpotId) ??
-    null;
-
   return (
     <section className="panel socal-panel">
       <div className="socal-header">
         <div>
           <h2>Spots — Live</h2>
           <p className="muted">
-            {forecast.conditions.length} beaches on the map · Best right now:{" "}
-            <strong>{best.spot.name}</strong> ({best.quality})
+            {liveCount
+              ? `${liveCount} beaches with live data`
+              : loading
+                ? "Loading live conditions across SoCal beaches…"
+                : `${SOCAL_SPOTS.length} beaches on the map`}
+            {best ? (
+              <>
+                {" "}
+                · Best right now: <strong>{best.spot.name}</strong> ({best.quality})
+              </>
+            ) : null}
           </p>
         </div>
         <button
@@ -148,7 +151,8 @@ export function SoCalConditions({
       </div>
 
       <SpotsMap
-        conditions={forecast.conditions}
+        spots={SOCAL_SPOTS}
+        conditions={forecast?.conditions ?? []}
         selectedSpotId={expandedSpotId ?? selectedSpotId}
         onSelectSpot={handleMapSelect}
       />
