@@ -58,6 +58,12 @@ export const SPOT_TIDE_STATIONS: Record<string, MappedTideStation> = {
     lat: 33.72,
     lng: -118.272,
   },
+  "palos-verdes": {
+    id: "9410660",
+    name: "Los Angeles, CA",
+    lat: 33.72,
+    lng: -118.272,
+  },
 
   // Orange County → Newport Bay Entrance
   huntington: {
@@ -78,6 +84,12 @@ export const SPOT_TIDE_STATIONS: Record<string, MappedTideStation> = {
     lat: 33.6033,
     lng: -117.883,
   },
+  "salt-creek": {
+    id: "9410580",
+    name: "Newport Bay Entrance, CA",
+    lat: 33.6033,
+    lng: -117.883,
+  },
   trestles: {
     id: "9410580",
     name: "Newport Bay Entrance, CA",
@@ -85,6 +97,18 @@ export const SPOT_TIDE_STATIONS: Record<string, MappedTideStation> = {
     lng: -117.883,
   },
   "trestles-uppers": {
+    id: "9410580",
+    name: "Newport Bay Entrance, CA",
+    lat: 33.6033,
+    lng: -117.883,
+  },
+  "trestles-uppers": {
+    id: "9410580",
+    name: "Newport Bay Entrance, CA",
+    lat: 33.6033,
+    lng: -117.883,
+  },
+  "trestles-middles": {
     id: "9410580",
     name: "Newport Bay Entrance, CA",
     lat: 33.6033,
@@ -124,6 +148,12 @@ export const SPOT_TIDE_STATIONS: Record<string, MappedTideStation> = {
     lng: -117.2571,
   },
   terramar: {
+    id: "9410230",
+    name: "La Jolla (Scripps), CA",
+    lat: 32.8669,
+    lng: -117.2571,
+  },
+  "ponto-jetty": {
     id: "9410230",
     name: "La Jolla (Scripps), CA",
     lat: 32.8669,

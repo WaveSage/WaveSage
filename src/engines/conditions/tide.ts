@@ -315,6 +315,29 @@ async function fetchTideForStation(
   return tideFromPredictions(predictions, station, distanceKm, at);
 }
 
+function nearestMappedStation(spot: SurfSpot): MappedTideStation | null {
+  const unique = new Map<string, MappedTideStation>();
+  for (const station of Object.values(SPOT_TIDE_STATIONS)) {
+    unique.set(station.id, station);
+  }
+
+  let nearest: MappedTideStation | null = null;
+  let bestKm = Number.POSITIVE_INFINITY;
+  for (const station of unique.values()) {
+    const km = haversineKm(
+      spot.latitude,
+      spot.longitude,
+      station.lat,
+      station.lng
+    );
+    if (km < bestKm) {
+      bestKm = km;
+      nearest = station;
+    }
+  }
+  return nearest;
+}
+
 export async function fetchTideInfo(
   spot: SurfSpot,
   options?: { at?: { dateKey: string; hour: number; minute?: number } }
@@ -323,30 +346,9 @@ export async function fetchTideInfo(
   const at = options?.at;
 
   try {
-    const mapped = SPOT_TIDE_STATIONS[spot.id];
-    if (mapped) {
-      const tide = await fetchTideForStation(spot, mapped, at);
-      if (tide) return tide;
-    }
-
-    const stations = await loadNoaaStations();
-    const nearest = findNearestStations(spot, stations);
-    if (!nearest.length) return null;
-
-    for (const candidate of nearest) {
-      const stationId = resolvePredictionStationId(candidate.station);
-      const predictions = await fetchPredictions(stationId, at?.dateKey);
-      if (!predictions) continue;
-
-      return tideFromPredictions(
-        predictions,
-        candidate.station,
-        candidate.distanceKm,
-        at
-      );
-    }
-
-    return null;
+    const mapped = SPOT_TIDE_STATIONS[spot.id] ?? nearestMappedStation(spot);
+    if (!mapped) return null;
+    return await fetchTideForStation(spot, mapped, at);
   } catch {
     return null;
   }

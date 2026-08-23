@@ -10,8 +10,8 @@ const QUALITY_RANK: Record<SurfConditions["quality"], number> = {
 };
 
 const REGIONAL_CACHE_MS = 2 * 60 * 1000;
-const REGIONAL_BATCH_SIZE = 3;
-const REGIONAL_DEADLINE_MS = 18_000;
+const REGIONAL_BATCH_SIZE = 4;
+const REGIONAL_DEADLINE_MS = 22_000;
 
 let regionalCache: { forecast: RegionalForecast; fetchedAt: number } | null =
   null;
@@ -38,7 +38,7 @@ async function fetchRegionalConditionsUncached(
     const batchResults = await Promise.all(
       batch.map(async (spot) => {
         try {
-          return await fetchSurfConditions(spot, { includeTide: false });
+          return await fetchSurfConditions(spot, { includeTide: true });
         } catch {
           return null;
         }

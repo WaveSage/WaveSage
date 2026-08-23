@@ -17,56 +17,63 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-let openMeteoQueue: Promise<void> = Promise.resolve();
+let activeOpenMeteo = 0;
+const openMeteoWaiters: Array<() => void> = [];
+const OPEN_METEO_MAX = 4;
 
-function enqueueOpenMeteo<T>(task: () => Promise<T>): Promise<T> {
-  const run = openMeteoQueue.then(task, task);
-  openMeteoQueue = run.then(
-    () => sleep(300),
-    () => sleep(300)
-  );
-  return run;
+async function withOpenMeteoLimit<T>(task: () => Promise<T>): Promise<T> {
+  while (activeOpenMeteo >= OPEN_METEO_MAX) {
+    await new Promise<void>((resolve) => openMeteoWaiters.push(resolve));
+  }
+  activeOpenMeteo += 1;
+  try {
+    return await task();
+  } finally {
+    activeOpenMeteo -= 1;
+    const next = openMeteoWaiters.shift();
+    if (next) next();
+  }
 }
 
 /** Fetch JSON and retry rate-limits / transient failures. Never cache error bodies. */
 export async function fetchJsonWithRetry<T>(
   url: string,
   label: string,
-  attempts = 5
+  attempts = 3
 ): Promise<T> {
-  return enqueueOpenMeteo(async () => {
-  let lastError = new Error(`${label} unavailable`);
+  return withOpenMeteoLimit(async () => {
+    let lastError = new Error(`${label} unavailable`);
 
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    if (attempt > 0) {
-      await sleep(900 * 2 ** (attempt - 1));
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      if (attempt > 0) {
+        await sleep(400 * 2 ** (attempt - 1));
+      }
+
+      try {
+        const response = await fetchWithTimeout(url, {
+          cache: "no-store",
+          timeoutMs: 10_000,
+        });
+
+        if (response.status === 429 || response.status >= 500) {
+          lastError = new Error(`${label} unavailable (${response.status})`);
+          continue;
+        }
+
+        if (!response.ok) {
+          throw new Error(`${label} unavailable (${response.status})`);
+        }
+
+        return (await response.json()) as T;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("unavailable (")) {
+          const status = Number(error.message.match(/\((\d+)\)/)?.[1]);
+          if (status && status !== 429 && status < 500) throw error;
+        }
+        lastError = error instanceof Error ? error : lastError;
+      }
     }
 
-    try {
-      const response = await fetchWithTimeout(url, {
-        cache: "no-store",
-        timeoutMs: 15_000,
-      });
-
-      if (response.status === 429 || response.status >= 500) {
-        lastError = new Error(`${label} unavailable (${response.status})`);
-        continue;
-      }
-
-      if (!response.ok) {
-        throw new Error(`${label} unavailable (${response.status})`);
-      }
-
-      return (await response.json()) as T;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("unavailable (")) {
-        const status = Number(error.message.match(/\((\d+)\)/)?.[1]);
-        if (status && status !== 429 && status < 500) throw error;
-      }
-      lastError = error instanceof Error ? error : lastError;
-    }
-  }
-
-  throw lastError;
+    throw lastError;
   });
 }

@@ -120,7 +120,7 @@ export default function HomePage() {
 
     try {
       const response = await fetch("/api/conditions/region", {
-        signal: AbortSignal.timeout(25_000),
+        signal: AbortSignal.timeout(40_000),
       });
       const data = (await response.json()) as RegionalForecast & {
         error?: string;
