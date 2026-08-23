@@ -10,27 +10,12 @@ const QUALITY_RANK: Record<SurfConditions["quality"], number> = {
 };
 
 const REGIONAL_CACHE_MS = 2 * 60 * 1000;
-const REGIONAL_BATCH_SIZE = 2;
+const REGIONAL_BATCH_SIZE = 3;
+const REGIONAL_DEADLINE_MS = 18_000;
 
 let regionalCache: { forecast: RegionalForecast; fetchedAt: number } | null =
   null;
 let regionalFetchInFlight: Promise<RegionalForecast> | null = null;
-
-async function runBatched<T, R>(
-  items: T[],
-  batchSize: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
-  const results: R[] = [];
-
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map(fn));
-    results.push(...batchResults);
-  }
-
-  return results;
-}
 
 function sortConditions(conditions: SurfConditions[]): SurfConditions[] {
   return [...conditions].sort((a, b) => {
@@ -43,22 +28,32 @@ function sortConditions(conditions: SurfConditions[]): SurfConditions[] {
 async function fetchRegionalConditionsUncached(
   spots: SurfSpot[]
 ): Promise<RegionalForecast> {
-  const settled = await runBatched(spots, REGIONAL_BATCH_SIZE, async (spot) => {
-    try {
-      return await fetchSurfConditions(spot, { includeTide: true });
-    } catch {
-      return null;
-    }
-  });
+  const collected: SurfConditions[] = [];
+  const deadline = Date.now() + REGIONAL_DEADLINE_MS;
 
-  const conditions = sortConditions(
-    settled.filter((item): item is SurfConditions => item !== null)
-  );
+  for (let i = 0; i < spots.length; i += REGIONAL_BATCH_SIZE) {
+    if (Date.now() > deadline && collected.length > 0) break;
+
+    const batch = spots.slice(i, i + REGIONAL_BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(async (spot) => {
+        try {
+          return await fetchSurfConditions(spot, { includeTide: false });
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    for (const item of batchResults) {
+      if (item) collected.push(item);
+    }
+  }
 
   return {
     region: SOCAL_REGION,
     fetchedAt: new Date().toISOString(),
-    conditions,
+    conditions: sortConditions(collected),
   };
 }
 

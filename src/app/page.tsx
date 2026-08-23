@@ -90,7 +90,7 @@ export default function HomePage() {
         setGuestMode(true);
         setSageSpotId(GUEST_SPOT_ID);
         setSelectedSpotId(GUEST_SPOT_ID);
-        await loadBriefing(getGuestProfile(), GUEST_SPOT_ID, null);
+        void loadBriefing(getGuestProfile(), GUEST_SPOT_ID, null);
         return null;
       }
       if (!response.ok) {
@@ -120,7 +120,7 @@ export default function HomePage() {
 
     try {
       const response = await fetch("/api/conditions/region", {
-        signal: AbortSignal.timeout(90_000),
+        signal: AbortSignal.timeout(25_000),
       });
       const data = (await response.json()) as RegionalForecast & {
         error?: string;

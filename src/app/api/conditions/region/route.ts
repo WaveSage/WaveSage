@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchRegionalConditions } from "@/engines/conditions/regional";
 
-export const maxDuration = 60;
+export const maxDuration = 25;
 
 export async function GET() {  try {
     const forecast = await fetchRegionalConditions();
