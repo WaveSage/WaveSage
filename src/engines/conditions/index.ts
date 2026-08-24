@@ -4,7 +4,7 @@ import { fetchTideInfo } from "./tide";
 import { pickHourIndex } from "./time-index";
 import { applySpotTransform } from "./spot-transform";
 import { fetchJsonWithRetry } from "./fetch-timeout";
-import { fetchNwsWind } from "./nws-wind";
+import { fetchNwsWind, type NwsWind } from "./nws-wind";
 import { getPacificNowParts } from "./pacific-time";
 import {
   classifyWind,
@@ -233,22 +233,7 @@ async function fetchOpenMeteoWind(spot: SurfSpot, forecastDays = 2) {
   );
 }
 
-async function fetchSurfaceWind(
-  spot: SurfSpot,
-  forecastDays = 2
-): Promise<OpenMeteoWeatherResponse> {
-  try {
-    const openMeteo = await fetchOpenMeteoWind(spot, forecastDays);
-    if (weatherHasWind(openMeteo)) return openMeteo;
-  } catch {
-    // Render often gets Open-Meteo 429s; NWS is the fallback for US spots.
-  }
-
-  const nws = await fetchNwsWind(spot);
-  if (!nws) {
-    return { hourly: { time: [] } };
-  }
-
+function weatherFromStation(nws: NwsWind): OpenMeteoWeatherResponse {
   return {
     hourly: {
       time: [new Date().toISOString()],
@@ -256,6 +241,24 @@ async function fetchSurfaceWind(
       wind_direction_10m: [nws.directionDeg],
     },
   };
+}
+
+async function fetchSurfaceWind(
+  spot: SurfSpot,
+  forecastDays = 2
+): Promise<OpenMeteoWeatherResponse> {
+  // Station observations beat 10 m model wind, which often shows 8 mph on glassy sand.
+  const nws = await fetchNwsWind(spot);
+  if (nws) return weatherFromStation(nws);
+
+  try {
+    const openMeteo = await fetchOpenMeteoWind(spot, forecastDays);
+    if (weatherHasWind(openMeteo)) return openMeteo;
+  } catch {
+    // Keep going; caller treats empty hourly as missing wind.
+  }
+
+  return { hourly: { time: [] } };
 }
 
 const CONDITIONS_CACHE_MS = 8 * 60 * 1000;
@@ -344,8 +347,10 @@ async function fetchSurfConditionsUncached(
   const rawWindMph = windMissing
     ? 0
     : Math.round((weather.hourly.wind_speed_10m?.[windIdx] ?? 0) * 10) / 10;
-  // 10 m model wind often reads 6–8 mph on glassy beach mornings.
-  const windSpeedMph = rawWindMph < 8 ? 0 : rawWindMph;
+  // Station calm is real under ~3 mph. Model-only wind under 8 mph is still treated as glassy.
+  const usedStationWind = weatherResult.hourly.time.length === 1;
+  const calmThreshold = usedStationWind ? 3 : 8;
+  const windSpeedMph = rawWindMph < calmThreshold ? 0 : rawWindMph;
   const windDirectionDeg = windMissing
     ? 0
     : Math.round(weather.hourly.wind_direction_10m?.[windIdx] ?? 0);

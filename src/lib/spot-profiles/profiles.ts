@@ -197,8 +197,8 @@ export const SPOT_PROFILES: Record<string, SpotProfile> = {
   "oceanside-harbor": {
     id: "oceanside-harbor",
     breakType: "jetty",
-    idealSwellDegMin: 170,
-    idealSwellDegMax: 250,
+    idealSwellDegMin: 165,
+    idealSwellDegMax: 280,
     amplificationFactor: 1.12,
     minPeriodSec: 8,
     tidePreference: "mid",
