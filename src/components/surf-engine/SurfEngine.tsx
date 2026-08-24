@@ -780,7 +780,7 @@ export function SurfEngine({
         {dailyLoading && !daily.length ? (
           <p className="se-muted">Building the 5-day outlook…</p>
         ) : daily.length ? (
-          <div className="se-daily-grid">
+          <div className="se-timeline-scroll">
             {daily.map((day) => (
               <div key={day.date} className={`se-day se-day-${day.quality}`}>
                 <span className="se-day-label">{day.label}</span>
