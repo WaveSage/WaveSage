@@ -174,11 +174,11 @@ export const SPOT_SPECS: SpotSpec[] = [
     region: "San Diego",
     breakType: "jetty",
     swellDegMin: 165,
-    swellDegMax: 280,
+    swellDegMax: 330,
     tidePreference: "mid",
     tideNotes: "Mid to low for sandbar shaping; watch harbor currents.",
     howItBreaks:
-      "Jetty-enhanced peaks at the harbor mouth. Works on south, southwest, and west swell (S–SW–W).",
+      "Jetty-enhanced peaks at the harbor mouth. Works on south, southwest, west, and northwest swell (S–SW–W–NW).",
     minPeriodSec: 8,
     amplificationFactor: 1.1,
     shadowSensitivity: 0.75,

@@ -59,7 +59,7 @@ export const SAGE_SPOT_KNOWLEDGE: SpotKnowledge[] = [
     howItBreaks:
       "Breaks near the harbor jetties with sandbar peaks that can wedge and stand up. Often a fun, accessible option when open beaches are walled out.",
     bestSwellDirection:
-      "South, southwest, and west (165°–280°). S, SW, and W all work here; northwest is the miss.",
+      "South through northwest (165°–330°). S, SW, W, and NW all work here.",
     cleanWindDirection:
       "Light east or northeast offshore. Strong west onshore kills it; under 5 mph onshore is still rideable.",
     tideNotes: "Varies with sand; mid tide is a reliable starting point.",
