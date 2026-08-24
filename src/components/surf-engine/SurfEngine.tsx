@@ -10,6 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import type {
+  DailyForecastDay,
   HourlySurfPoint,
   StyleOutlook,
   SurfConditions,
@@ -300,6 +301,8 @@ export function SurfEngine({
 }: SurfEngineProps) {
   const [hourly, setHourly] = useState<HourlySurfPoint[]>([]);
   const [hourlyLoading, setHourlyLoading] = useState(false);
+  const [daily, setDaily] = useState<DailyForecastDay[]>([]);
+  const [dailyLoading, setDailyLoading] = useState(false);
   const [deltas, setDeltas] = useState<
     { label: string; value: string; up?: boolean }[] | null
   >(null);
@@ -327,6 +330,34 @@ export function SurfEngine({
       }
     }
     void loadHourly();
+    return () => {
+      cancelled = true;
+    };
+  }, [sageSpotId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDaily() {
+      setDailyLoading(true);
+      try {
+        const res = await fetch(
+          `/api/conditions/forecast?spotId=${encodeURIComponent(sageSpotId)}`,
+          { signal: AbortSignal.timeout(90_000) }
+        );
+        const data = (await res.json()) as {
+          days?: DailyForecastDay[];
+          error?: string;
+        };
+        if (!cancelled && res.ok && data.days) {
+          setDaily(data.days.slice(0, 5));
+        }
+      } catch {
+        if (!cancelled) setDaily([]);
+      } finally {
+        if (!cancelled) setDailyLoading(false);
+      }
+    }
+    void loadDaily();
     return () => {
       cancelled = true;
     };
@@ -738,6 +769,39 @@ export function SurfEngine({
               );
             })}
           </div>
+        )}
+      </section>
+
+      <section className="se-card se-daily">
+        <div className="se-section-head">
+          <h3>Day-by-day</h3>
+          <span className="se-best-pill">5-day outlook</span>
+        </div>
+        {dailyLoading && !daily.length ? (
+          <p className="se-muted">Building the 5-day outlook…</p>
+        ) : daily.length ? (
+          <div className="se-daily-grid">
+            {daily.map((day) => (
+              <div key={day.date} className={`se-day se-day-${day.quality}`}>
+                <span className="se-day-label">{day.label}</span>
+                <strong className="se-day-size">{day.waveHeightFt} ft</strong>
+                <span className="se-day-period">{day.wavePeriodSec}s</span>
+                <span className="se-day-swell">
+                  {day.swellDirectionLabel} {day.swellHeightFt} ft
+                </span>
+                <span className={`se-hour-windtype ${day.windType}`}>
+                  {day.windSpeedMph < 8
+                    ? "Calm"
+                    : `${Math.round(day.windSpeedMph)} ${day.windDirectionLabel}`}
+                </span>
+                <span className={`se-hour-quality ${day.quality}`}>
+                  {day.quality}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="se-muted">5-day outlook unavailable right now.</p>
         )}
       </section>
 

@@ -15,6 +15,7 @@ const PUBLIC_PAGES = new Set([
 function isGuestReadableApi(pathname: string, method: string): boolean {
   if (method === "GET" && pathname === "/api/conditions/region") return true;
   if (method === "GET" && pathname === "/api/conditions/hourly") return true;
+  if (method === "GET" && pathname === "/api/conditions/forecast") return true;
   if (method === "POST" && pathname === "/api/briefing") return true;
   if (method === "GET" && pathname === "/api/reports") return true;
   if (method === "GET" && pathname.startsWith("/api/reports/image/")) {
