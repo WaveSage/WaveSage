@@ -464,8 +464,12 @@ export function SurfEngine({
   }
 
   const mood = atmosphereFromConditions(conditions);
-  const score = styleOutlook?.style_fit_score ?? breakdown.overall;
-  const signal = goSignal(score, conditions.windType);
+  const score = breakdown.overall;
+  const signal = goSignal(
+    score,
+    conditions.windType,
+    conditions.windSpeedMph
+  );
   const arrowRotation = conditions.swellDirectionDeg;
   const spotTidePref = getSpotProfile(conditions.spot.id).tidePreference;
   const bestIdx = windowRec

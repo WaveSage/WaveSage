@@ -59,9 +59,9 @@ export const SAGE_SPOT_KNOWLEDGE: SpotKnowledge[] = [
     howItBreaks:
       "Breaks near the harbor jetties with sandbar peaks that can wedge and stand up. Often a fun, accessible option when open beaches are walled out.",
     bestSwellDirection:
-      "West to northwest (260°–300°). Works on typical SoCal winter and spring swells.",
+      "South to southwest (170°–250°). S and SW are the preferred angles; west is a wrap, not the primary window.",
     cleanWindDirection:
-      "Light east offshore. Strong W onshore kills it.",
+      "Light east or northeast offshore. Strong west onshore kills it; under 5 mph onshore is still rideable.",
     tideNotes: "Varies with sand; mid tide is a reliable starting point.",
     localTips:
       "Mind boat traffic and jetty rocks. The sandbar shifts — scout from the beach before paddling out.",

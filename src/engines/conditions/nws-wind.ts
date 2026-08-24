@@ -44,11 +44,13 @@ function cellKey(lat: number, lng: number): string {
 }
 
 function parseWindSpeed(value: string): number | null {
+  if (/calm/i.test(value)) return 0;
   const matches = value.match(/[\d.]+/g);
   if (!matches?.length) return null;
   const nums = matches.map(Number).filter((n) => Number.isFinite(n));
   if (!nums.length) return null;
-  return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+  // Use the lower end of "5 to 10 mph" so forecast ranges don't invent breeze.
+  return Math.round(Math.min(...nums) * 10) / 10;
 }
 
 function parseWindDirection(value: string): number | null {

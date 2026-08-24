@@ -36,20 +36,29 @@ export interface BestWindow {
   score: number;
 }
 
-function qualityToScore(quality: SurfConditions["quality"]): number {
-  switch (quality) {
-    case "epic":
-      return 9.2;
-    case "good":
-      return 7.4;
-    case "fair":
-      return 5.2;
-    default:
-      return 3.2;
+function qualityToScore(
+  quality: SurfConditions["quality"],
+  heightFt?: number
+): number {
+  let score =
+    quality === "epic"
+      ? 9.2
+      : quality === "good"
+        ? 7.4
+        : quality === "fair"
+          ? 5.2
+          : 3.2;
+  if (heightFt != null) {
+    if (heightFt < 1.5) score -= 1.8;
+    else if (heightFt < 2.5) score -= 0.9;
+    else if (heightFt >= 3.5 && heightFt <= 6) score += 0.5;
   }
+  return Math.max(1, Math.min(10, Math.round(score * 10) / 10));
 }
 
 function windScore(type: WindType, speed: number): number {
+  // Light air (<5 mph) barely textures the face, regardless of direction.
+  if (speed < 5) return 8.4;
   if (type === "offshore") {
     if (speed <= 12) return 8.5;
     if (speed <= 18) return 7;
@@ -61,11 +70,12 @@ function windScore(type: WindType, speed: number): number {
     return 3.5;
   }
   if (type === "onshore") {
-    if (speed <= 6) return 5;
-    if (speed <= 12) return 3.5;
+    if (speed < 5) return 8;
+    if (speed <= 10) return 5.5;
+    if (speed <= 15) return 3.5;
     return 2;
   }
-  return 5;
+  return 6.5;
 }
 
 function swellScore(period: number, fitScore?: number): number {
@@ -102,7 +112,7 @@ export function buildScoreBreakdown(
   conditions: SurfConditions,
   styleFit?: number
 ): ScoreBreakdown {
-  const wave = qualityToScore(conditions.quality);
+  const wave = qualityToScore(conditions.quality, conditions.waveHeightFt);
   const wind = windScore(conditions.windType, conditions.windSpeedMph);
   const swell = swellScore(
     conditions.swellPeriodSec || conditions.wavePeriodSec,
@@ -113,7 +123,7 @@ export function buildScoreBreakdown(
     wave * 0.3 + wind * 0.25 + swell * 0.3 + tide * 0.15;
   const overall =
     styleFit != null
-      ? Math.round(((base + styleFit) / 2) * 10) / 10
+      ? Math.round((base * 0.75 + styleFit * 0.25) * 10) / 10
       : Math.round(base * 10) / 10;
   return {
     overall: Math.min(10, overall),
@@ -130,9 +140,11 @@ export function qualityLabel(quality: SurfConditions["quality"]): string {
 
 export function goSignal(
   score: number,
-  windType: WindType
+  windType: WindType,
+  windSpeedMph = 99
 ): GoSignal {
-  if (score >= 7.5 && windType !== "onshore") return "go";
+  const chopped = windType === "onshore" && windSpeedMph >= 5;
+  if (score >= 7.5 && !chopped) return "go";
   if (score >= 6.5) return "worth";
   if (score >= 5) return "workable";
   if (score >= 3.5) return "marginal";

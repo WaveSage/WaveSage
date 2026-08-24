@@ -341,18 +341,22 @@ async function fetchSurfConditionsUncached(
   const waveHeightFt = modelWaveHeightFt;
   const waveDirectionDeg = Math.round(marine.hourly.wave_direction?.[idx] ?? 0);
   const windMissing = weather.hourly.wind_speed_10m?.[windIdx] == null;
-  const windSpeedMph = windMissing
+  const rawWindMph = windMissing
     ? 0
     : Math.round((weather.hourly.wind_speed_10m?.[windIdx] ?? 0) * 10) / 10;
+  // 10 m model wind often reads 6–8 mph on glassy beach mornings.
+  const windSpeedMph = rawWindMph < 8 ? 0 : rawWindMph;
   const windDirectionDeg = windMissing
     ? 0
     : Math.round(weather.hourly.wind_direction_10m?.[windIdx] ?? 0);
-  const windDirectionLabel = windMissing
-    ? "—"
-    : degreesToCompass(windDirectionDeg);
-  const windType = windMissing
-    ? "unknown"
-    : classifyWind(windDirectionDeg, spot.shoreBearingDeg);
+  const windDirectionLabel =
+    windMissing || windSpeedMph === 0
+      ? "Calm"
+      : degreesToCompass(windDirectionDeg);
+  const windType =
+    windMissing || windSpeedMph === 0
+      ? "unknown"
+      : classifyWind(windDirectionDeg, spot.shoreBearingDeg);
   const swellHeightFt = metersToFeet(
     marine.hourly.swell_wave_height?.[idx] ?? waveHeightFt / METERS_TO_FEET
   );
