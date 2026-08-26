@@ -84,11 +84,38 @@ export async function POST(request: Request) {
   const { validateAndStoreReport } = await import(
     "@/lib/reports/validate-submission"
   );
+  const {
+    parseCrowd,
+    parseSurface,
+    parseTags,
+    parseWaveQuality,
+    parseWaveSize,
+    formatStructuredSummary,
+  } = await import("@/lib/reports/structured");
+
+  const waveQuality = parseWaveQuality(String(form.get("wave_quality") ?? ""));
+  const waveSize = parseWaveSize(String(form.get("wave_size") ?? ""));
+  const surface = parseSurface(String(form.get("surface") ?? ""));
+  const crowd = parseCrowd(String(form.get("crowd") ?? ""));
+  const tags = parseTags(String(form.get("tags") ?? ""));
+  const comment = String(form.get("caption") ?? "");
+  const caption =
+    waveQuality && waveSize && surface && crowd
+      ? formatStructuredSummary(
+          { waveQuality, waveSize, surface, crowd, tags },
+          comment
+        )
+      : comment;
 
   const result = await validateAndStoreReport({
     imageBuffer: Buffer.from(await imageFile.arrayBuffer()),
     mimeType: imageFile.type,
-    caption: String(form.get("caption") ?? ""),
+    caption,
+    waveQuality: waveQuality ?? undefined,
+    waveSize: waveSize ?? undefined,
+    surface: surface ?? undefined,
+    crowd: crowd ?? undefined,
+    tags,
     spotId: String(form.get("spot_id") ?? ""),
     userId,
     username: user.username,

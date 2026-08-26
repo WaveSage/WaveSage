@@ -5,6 +5,18 @@ import { SOCAL_SPOTS, getSpotById } from "@/lib/socal-spots";
 import { displayCaption, validateCaption } from "@/lib/reports/caption";
 import { REPORT_CONFIG } from "@/lib/reports/config";
 import { findNearestSpot, kmToMiles, haversineKm } from "@/lib/reports/location";
+import {
+  CONDITION_TAGS,
+  CROWD_LEVELS,
+  SURFACE_CONDITIONS,
+  WAVE_QUALITY,
+  WAVE_SIZES,
+  type ConditionTag,
+  type CrowdLevel,
+  type SurfaceCondition,
+  type WaveQuality,
+  type WaveSize,
+} from "@/lib/reports/structured";
 import type { ReportSubmitResponse } from "@/lib/reports/types";
 
 interface SubmitPhotoFlowProps {
@@ -111,6 +123,11 @@ export function SubmitPhotoFlow({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [waveQuality, setWaveQuality] = useState<WaveQuality | null>(null);
+  const [waveSize, setWaveSize] = useState<WaveSize | null>(null);
+  const [surface, setSurface] = useState<SurfaceCondition | null>(null);
+  const [crowd, setCrowd] = useState<CrowdLevel | null>(null);
+  const [tags, setTags] = useState<ConditionTag[]>([]);
   const [reportSpotId, setReportSpotId] = useState(spotId);
   const [deviceLocation, setDeviceLocation] = useState<DeviceLocation | null>(
     null
@@ -130,6 +147,11 @@ export function SubmitPhotoFlow({
     setPreviewUrl(null);
     setFile(null);
     setCaption("");
+    setWaveQuality(null);
+    setWaveSize(null);
+    setSurface(null);
+    setCrowd(null);
+    setTags([]);
     setDeviceLocation(null);
     setLocationStatus(null);
     setLocationChecking(false);
@@ -189,6 +211,11 @@ export function SubmitPhotoFlow({
     setClientError(null);
     setSuccessMessage(null);
     setCaption("");
+    setWaveQuality(null);
+    setWaveSize(null);
+    setSurface(null);
+    setCrowd(null);
+    setTags([]);
     setDeviceLocation(null);
     setLocationStatus("Checking you are at the break…");
     setReportSpotId(spotId);
@@ -234,6 +261,11 @@ export function SubmitPhotoFlow({
       return;
     }
 
+    if (!waveQuality || !waveSize || !surface || !crowd) {
+      setClientError("Tap quality, size, surface, and crowd before submitting.");
+      return;
+    }
+
     if (!deviceLocation || !locationOk) {
       setClientError(
         "Spot verification failed. Enable location at the break, then tap Retry location."
@@ -248,6 +280,11 @@ export function SubmitPhotoFlow({
       const form = new FormData();
       form.append("image_file", file);
       form.append("caption", captionCheck.normalized);
+      form.append("wave_quality", String(waveQuality ?? ""));
+      form.append("wave_size", waveSize ?? "");
+      form.append("surface", surface ?? "");
+      form.append("crowd", crowd ?? "");
+      form.append("tags", tags.join(","));
       form.append("spot_id", reportSpotId);
       form.append("device_lat", String(deviceLocation.lat));
       form.append("device_lon", String(deviceLocation.lon));
@@ -272,7 +309,7 @@ export function SubmitPhotoFlow({
       }
 
       setSuccessMessage(
-        `Report submitted. Your wave photo and description are saved under ${reportSpotName}.`
+        `Report submitted. Your wave photo and conditions are saved under ${reportSpotName}.`
       );
       onSubmitted?.();
     } catch (error) {
@@ -285,9 +322,21 @@ export function SubmitPhotoFlow({
   }
 
   const captionPreview = validateCaption(caption);
+  function toggleTag(tag: ConditionTag) {
+    setTags((current) =>
+      current.includes(tag)
+        ? current.filter((item) => item !== tag)
+        : [...current, tag]
+    );
+  }
+
   const canSubmit =
     Boolean(file) &&
     captionPreview.ok &&
+    waveQuality != null &&
+    waveSize != null &&
+    surface != null &&
+    crowd != null &&
     locationOk &&
     !submitting &&
     !locationChecking;
@@ -398,21 +447,113 @@ export function SubmitPhotoFlow({
                   {locationChecking ? "Checking location…" : "Retry location"}
                 </button>
 
-                <label className="photo-caption-label">
-                  Current conditions (optional, max {REPORT_CONFIG.captionMaxLength}{" "}
-                  chars)
-                  <textarea
-                    value={caption}
-                    maxLength={REPORT_CONFIG.captionMaxLength + 20}
-                    rows={3}
-                    placeholder="Chest-high and clean, light offshore..."
-                    onChange={(e) => setCaption(e.target.value)}
-                  />
-                </label>
-                <p className="muted photo-caption-meta">
-                  {caption.length}/{REPORT_CONFIG.captionMaxLength} ·{" "}
-                  {displayCaption(captionPreview.normalized)}
-                </p>
+                <div className="report-details">
+                  <fieldset className="report-field">
+                    <legend>Wave quality</legend>
+                    <div className="report-quality" role="radiogroup" aria-label="Wave quality">
+                      {WAVE_QUALITY.map((item) => (
+                        <button
+                          key={item.value}
+                          type="button"
+                          className={`report-star${waveQuality != null && waveQuality >= item.value ? " selected" : ""}`}
+                          aria-pressed={waveQuality === item.value}
+                          title={`${item.value} — ${item.label}`}
+                          onClick={() => setWaveQuality(item.value)}
+                        >
+                          <span aria-hidden>★</span>
+                          <span className="report-star-n">{item.value}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="muted report-field-hint">
+                      {waveQuality
+                        ? `${waveQuality} — ${WAVE_QUALITY.find((item) => item.value === waveQuality)?.label}`
+                        : "Tap a rating"}
+                    </p>
+                  </fieldset>
+
+                  <fieldset className="report-field">
+                    <legend>Wave size</legend>
+                    <div className="report-choices">
+                      {WAVE_SIZES.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          className={`report-chip${waveSize === size ? " selected" : ""}`}
+                          aria-pressed={waveSize === size}
+                          onClick={() => setWaveSize(size)}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="report-field">
+                    <legend>Wind / surface</legend>
+                    <div className="report-choices">
+                      {SURFACE_CONDITIONS.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`report-chip${surface === option ? " selected" : ""}`}
+                          aria-pressed={surface === option}
+                          onClick={() => setSurface(option)}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="report-field">
+                    <legend>Crowd</legend>
+                    <div className="report-choices">
+                      {CROWD_LEVELS.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`report-chip${crowd === option ? " selected" : ""}`}
+                          aria-pressed={crowd === option}
+                          onClick={() => setCrowd(option)}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="report-field">
+                    <legend>Quick tags (optional)</legend>
+                    <div className="report-choices report-tags">
+                      {CONDITION_TAGS.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          className={`report-pill${tags.includes(tag) ? " selected" : ""}`}
+                          aria-pressed={tags.includes(tag)}
+                          onClick={() => toggleTag(tag)}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <label className="photo-caption-label">
+                    Optional note
+                    <textarea
+                      value={caption}
+                      maxLength={REPORT_CONFIG.captionMaxLength}
+                      rows={2}
+                      placeholder="Clean sets every 10 minutes. Bigger than it looks from the beach."
+                      onChange={(e) => setCaption(e.target.value)}
+                    />
+                  </label>
+                  <p className="muted photo-caption-meta">
+                    {caption.length}/{REPORT_CONFIG.captionMaxLength} · optional
+                  </p>
+                </div>
 
                 {clientError && <p className="photo-error">{clientError}</p>}
 

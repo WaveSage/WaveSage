@@ -1,4 +1,11 @@
 import type { ReportNote, ReportReasonCode } from "./config";
+import type {
+  ConditionTag,
+  CrowdLevel,
+  SurfaceCondition,
+  WaveQuality,
+  WaveSize,
+} from "./structured";
 
 export type GpsSource = "device" | "exif";
 
@@ -9,6 +16,11 @@ export interface UserReportRecord {
   spotId: string;
   spotName: string;
   normalizedCaption: string;
+  waveQuality?: WaveQuality;
+  waveSize?: WaveSize;
+  surface?: SurfaceCondition;
+  crowd?: CrowdLevel;
+  tags?: ConditionTag[];
   imageFileName: string;
   thumbnailFileName: string;
   imageContentConfidence: number;
@@ -31,6 +43,11 @@ export interface UserReportGalleryItem {
   spotId: string;
   spotName: string;
   normalizedCaption: string;
+  waveQuality?: WaveQuality;
+  waveSize?: WaveSize;
+  surface?: SurfaceCondition;
+  crowd?: CrowdLevel;
+  tags?: ConditionTag[];
   captureTimeUtc: string;
   submissionTimeUtc: string;
   distanceToSpotMiles: number;
@@ -72,6 +89,11 @@ export interface SubmissionInput {
   imageBuffer: Buffer;
   mimeType: string;
   caption: string;
+  waveQuality?: WaveQuality;
+  waveSize?: WaveSize;
+  surface?: SurfaceCondition;
+  crowd?: CrowdLevel;
+  tags?: ConditionTag[];
   spotId: string;
   userId: string;
   username: string;

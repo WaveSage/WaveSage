@@ -132,6 +132,27 @@ export function UserReportsGallery({
             <strong>{report.spotName}</strong>
             <span className="badge">accepted</span>
           </div>
+          {report.waveSize || report.surface || report.crowd || report.waveQuality ? (
+            <p className="report-summary">
+              {report.waveQuality ? (
+                <span className="report-summary-chip">{report.waveQuality}/5</span>
+              ) : null}
+              {report.waveSize ? (
+                <span className="report-summary-chip">{report.waveSize}</span>
+              ) : null}
+              {report.surface ? (
+                <span className="report-summary-chip">{report.surface}</span>
+              ) : null}
+              {report.crowd ? (
+                <span className="report-summary-chip">{report.crowd}</span>
+              ) : null}
+              {report.tags?.map((tag) => (
+                <span key={tag} className="report-summary-chip">
+                  {tag}
+                </span>
+              ))}
+            </p>
+          ) : null}
           <p>{displayCaption(report.normalizedCaption)}</p>
           <p className="muted report-meta">
             {formatWhen(report.captureTimeUtc)} ·{" "}
