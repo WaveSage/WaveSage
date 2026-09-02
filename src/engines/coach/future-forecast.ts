@@ -130,9 +130,14 @@ export function resolveForecastDateKeys(
   }
 }
 
-function windPhrase(day: DailyForecastDay): string {
-  const type = day.windType !== "unknown" ? `${day.windType} ` : "";
-  return `${type}${day.windDirectionLabel} ${day.windSpeedMph} mph`;
+function windPhrase(period: {
+  windType: DailyForecastDay["windType"];
+  windDirectionLabel: string;
+  windSpeedMph: number;
+}): string {
+  if (period.windSpeedMph < 8) return "calm wind";
+  const type = period.windType !== "unknown" ? `${period.windType} ` : "";
+  return `${type}${period.windDirectionLabel} ${period.windSpeedMph} mph`;
 }
 
 function qualityTone(quality: DailyForecastDay["quality"]): string {
@@ -148,6 +153,14 @@ function qualityTone(quality: DailyForecastDay["quality"]): string {
   }
 }
 
+function formatPeriodLine(period: NonNullable<DailyForecastDay["periods"]>[number]): string {
+  const tide =
+    period.tideHeightFt != null
+      ? ` · tide ${period.tideHeightFt} ft ${period.tideTrend ?? ""}`.trimEnd()
+      : "";
+  return `${period.label}: ~${period.waveHeightFt} ft @ ${period.wavePeriodSec}s · ${period.swellDirectionLabel} · ${windPhrase(period)}${tide} — ${period.quality}`;
+}
+
 function formatOneDay(
   spot: SurfSpot,
   day: DailyForecastDay,
@@ -157,14 +170,23 @@ function formatOneDay(
     findSpotKnowledge(spot.name) ?? findSpotKnowledgeByCatalogId(spot.id);
 
   const lines = [
-    `${spot.name} ${dayLabel} (${friendlyDateLabel(day.date)}) — midday forecast:`,
+    `${spot.name} ${dayLabel} (${friendlyDateLabel(day.date)}) — morning / afternoon / evening:`,
     "",
-    `~${day.waveHeightFt} ft @ ${day.wavePeriodSec}s · ${day.swellDirectionLabel} swell @ ${day.swellPeriodSec}s · ${windPhrase(day)}.`,
-    `Overall: ${day.quality} — ${qualityTone(day.quality)} for a session.`,
   ];
 
+  if (day.periods?.length) {
+    for (const period of day.periods) {
+      lines.push(formatPeriodLine(period));
+    }
+  } else {
+    lines.push(
+      `~${day.waveHeightFt} ft @ ${day.wavePeriodSec}s · ${day.swellDirectionLabel} swell @ ${day.swellPeriodSec}s · ${windPhrase(day)}.`,
+      `Overall: ${day.quality} — ${qualityTone(day.quality)} for a session.`
+    );
+  }
+
   if (day.swellFit) {
-    lines.push(`Swell fit at this break: ${day.swellFit}.`);
+    lines.push(`Swell fit at this break (afternoon): ${day.swellFit}.`);
   }
 
   if (knowledge) {
@@ -176,7 +198,7 @@ function formatOneDay(
 
   lines.push(
     "",
-    "Midday snapshot from the 5-day marine/wind forecast (Pacific time). Morning glass and evening wind can shift the feel.",
+    "Conditions shift with tide and wind through the day — morning glass often differs from the afternoon seabreeze.",
     "",
     "Want today's live check, or another day in the 5-day window?"
   );
@@ -202,15 +224,26 @@ export function formatFutureConditionsReport(
 
   if (request.kind === "weekend" && matched.length >= 2) {
     const [a, b] = matched;
+    const summarize = (day: DailyForecastDay) => {
+      if (day.periods?.length) {
+        return day.periods
+          .map(
+            (p) =>
+              `${p.label.toLowerCase()} ${p.quality} (~${p.waveHeightFt} ft)`
+          )
+          .join(", ");
+      }
+      return `~${day.waveHeightFt} ft @ ${day.wavePeriodSec}s, ${day.swellDirectionLabel} swell, ${windPhrase(day)} — ${day.quality}`;
+    };
     return [
-      `${forecast.spot.name} this weekend — forecast midday outlook:`,
+      `${forecast.spot.name} this weekend — morning / afternoon / evening outlook:`,
       "",
-      `Saturday (${friendlyDateLabel(a.date)}): ~${a.waveHeightFt} ft @ ${a.wavePeriodSec}s, ${a.swellDirectionLabel} swell, ${windPhrase(a)} — ${a.quality}.`,
-      `Sunday (${friendlyDateLabel(b.date)}): ~${b.waveHeightFt} ft @ ${b.wavePeriodSec}s, ${b.swellDirectionLabel} swell, ${windPhrase(b)} — ${b.quality}.`,
+      `Saturday (${friendlyDateLabel(a.date)}): ${summarize(a)}.`,
+      `Sunday (${friendlyDateLabel(b.date)}): ${summarize(b)}.`,
       "",
       `Better day on paper: ${a.quality === "poor" && b.quality !== "poor" ? "Sunday" : b.quality === "poor" && a.quality !== "poor" ? "Saturday" : a.waveHeightFt >= b.waveHeightFt ? "Saturday" : "Sunday"}.`,
       "",
-      "These are midday marine/wind snapshots — glass-offs and onshore periods can still flip the session.",
+      "Tide and wind still flip sessions — compare the morning glass vs afternoon seabreeze before you commit.",
     ].join("\n");
   }
 

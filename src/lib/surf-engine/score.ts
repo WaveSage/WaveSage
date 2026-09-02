@@ -293,6 +293,33 @@ export function windTypeHeadline(type: WindType): string {
   }
 }
 
+/** Live wind line for Sage stats / wind card. */
+export function formatWindDisplay(
+  windSpeedMph: number,
+  windDirectionLabel: string,
+  windType: WindType
+): { headline: string; detail: string; available: boolean } {
+  if (windType === "unknown" && windDirectionLabel === "—") {
+    return {
+      headline: "VARIABLE",
+      detail: "Wind data catching up",
+      available: false,
+    };
+  }
+  if (windSpeedMph === 0 || windDirectionLabel === "Calm") {
+    return {
+      headline: "CALM",
+      detail: "Calm / glassy",
+      available: true,
+    };
+  }
+  return {
+    headline: windTypeHeadline(windType),
+    detail: `${windSpeedMph} mph ${windDirectionLabel}`,
+    available: true,
+  };
+}
+
 export function formatHeightRange(ft: number): string {
   const low = Math.max(0.5, Math.round((ft - 0.5) * 2) / 2);
   const high = Math.round((ft + 0.5) * 2) / 2;

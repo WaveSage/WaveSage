@@ -27,22 +27,65 @@ export function SpotForecastPanel({
     <div className="spot-forecast">
       <h4>5-day forecast — {forecast.spot.name}</h4>
       <div className="forecast-grid">
-        {forecast.days.map((day) => (
-          <div key={day.date} className="forecast-day">
-            <div className="forecast-day-top">
-              <strong>{day.label}</strong>
-              <span className={`badge ${day.quality}`}>{day.quality}</span>
+        {forecast.days.map((day) => {
+          const periods = day.periods?.length
+            ? day.periods
+            : [
+                {
+                  id: "afternoon" as const,
+                  label: "Afternoon",
+                  hour: 13,
+                  waveHeightFt: day.waveHeightFt,
+                  wavePeriodSec: day.wavePeriodSec,
+                  swellHeightFt: day.swellHeightFt,
+                  swellPeriodSec: day.swellPeriodSec,
+                  swellDirectionLabel: day.swellDirectionLabel,
+                  windSpeedMph: day.windSpeedMph,
+                  windDirectionLabel: day.windDirectionLabel,
+                  windType: day.windType,
+                  tideHeightFt: null as number | null,
+                  tideTrend: null,
+                  quality: day.quality,
+                },
+              ];
+
+          return (
+            <div key={day.date} className="forecast-day">
+              <div className="forecast-day-top">
+                <strong>{day.label}</strong>
+                <span className={`badge ${day.quality}`}>{day.quality}</span>
+              </div>
+              <div className="forecast-periods">
+                {periods.map((period) => (
+                  <div key={period.id} className="forecast-period">
+                    <div className="forecast-period-top">
+                      <span>{period.label}</span>
+                      <span className={`badge ${period.quality}`}>
+                        {period.quality}
+                      </span>
+                    </div>
+                    <p className="muted">
+                      {period.waveHeightFt} ft @ {period.wavePeriodSec}s ·{" "}
+                      {period.swellDirectionLabel}
+                    </p>
+                    <p className="muted">
+                      Wind{" "}
+                      {period.windSpeedMph < 8
+                        ? "Calm"
+                        : `${period.windDirectionLabel} ${period.windSpeedMph} mph`}
+                      {period.windType !== "unknown" && period.windSpeedMph >= 8
+                        ? ` · ${period.windType}`
+                        : ""}
+                      {period.tideHeightFt != null
+                        ? ` · Tide ${period.tideHeightFt} ft ${period.tideTrend ?? ""}`
+                        : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="muted">
-              {day.waveHeightFt} ft @ {day.wavePeriodSec}s
-            </p>
-            <p className="muted">
-              Swell {day.swellHeightFt} ft {day.swellDirectionLabel} · Wind{" "}
-              {day.windDirectionLabel} {day.windSpeedMph} mph
-              {day.windType !== "unknown" ? ` · ${day.windType}` : ""}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -150,8 +150,10 @@ async function fetchObservedWind(spot: SurfSpot): Promise<NwsWind | null> {
     obs.properties?.windSpeed?.value,
     obs.properties?.windSpeed?.unitCode
   );
+  // Missing station wind — fall through to hourly forecast / Open-Meteo.
+  if (speedMph == null) return null;
+
   const directionDeg = obs.properties?.windDirection?.value;
-  if (speedMph == null) return { speedMph: 0, directionDeg: 0 };
   if (directionDeg == null || !Number.isFinite(directionDeg)) {
     return { speedMph, directionDeg: 0 };
   }

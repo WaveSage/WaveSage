@@ -171,9 +171,31 @@ export interface RegionalForecast {
   conditions: SurfConditions[];
 }
 
+export type ForecastPeriodId = "morning" | "afternoon" | "evening";
+
+/** Morning / afternoon / evening slice within a forecast day (Pacific time). */
+export interface DailyForecastPeriod {
+  id: ForecastPeriodId;
+  label: string;
+  hour: number;
+  waveHeightFt: number;
+  wavePeriodSec: number;
+  swellHeightFt: number;
+  swellPeriodSec: number;
+  swellDirectionLabel: string;
+  windSpeedMph: number;
+  windDirectionLabel: string;
+  windType: WindType;
+  tideHeightFt: number | null;
+  tideTrend: TideTrend | null;
+  quality: SurfConditions["quality"];
+  swellFit?: SwellFit;
+}
+
 export interface DailyForecastDay {
   date: string;
   label: string;
+  /** Afternoon snapshot — kept for coach / summary consumers. */
   waveHeightFt: number;
   wavePeriodSec: number;
   swellHeightFt: number;
@@ -184,6 +206,8 @@ export interface DailyForecastDay {
   windType: WindType;
   quality: SurfConditions["quality"];
   swellFit?: SwellFit;
+  /** Morning, afternoon, and evening conditions for the day. */
+  periods: DailyForecastPeriod[];
 }
 
 export interface SpotForecast {

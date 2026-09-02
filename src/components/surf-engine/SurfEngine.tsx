@@ -26,6 +26,7 @@ import {
   buildScoreBreakdown,
   findBestWindow,
   formatHeightRange,
+  formatWindDisplay,
   goSignal,
   goSignalLabel,
   qualityLabel,
@@ -339,6 +340,7 @@ export function SurfEngine({
     let cancelled = false;
     async function loadDaily() {
       setDailyLoading(true);
+      setDaily([]);
       try {
         const res = await fetch(
           `/api/conditions/forecast?spotId=${encodeURIComponent(sageSpotId)}`,
@@ -348,8 +350,10 @@ export function SurfEngine({
           days?: DailyForecastDay[];
           error?: string;
         };
-        if (!cancelled && res.ok && data.days) {
+        if (!cancelled && res.ok && data.days?.length) {
           setDaily(data.days.slice(0, 5));
+        } else if (!cancelled) {
+          setDaily([]);
         }
       } catch {
         if (!cancelled) setDaily([]);
@@ -503,6 +507,11 @@ export function SurfEngine({
   );
   const arrowRotation = conditions.swellDirectionDeg;
   const spotTidePref = getSpotProfile(conditions.spot.id).tidePreference;
+  const windDisplay = formatWindDisplay(
+    conditions.windSpeedMph,
+    conditions.windDirectionLabel,
+    conditions.windType
+  );
   const bestIdx = windowRec
     ? hourly.findIndex((p) => p.label === windowRec.startLabel)
     : -1;
@@ -637,14 +646,12 @@ export function SurfEngine({
               </span>
               <span className="se-stat-label">Wind</span>
               <strong className="se-stat-value">
-                {conditions.windType === "unknown"
-                  ? "—"
-                  : `${conditions.windSpeedMph} mph ${conditions.windDirectionLabel}`}
+                {windDisplay.available ? windDisplay.detail : "—"}
               </strong>
               <span className="se-stat-sub">
-                {conditions.windType === "unknown"
-                  ? "checking NWS"
-                  : windTypeHeadline(conditions.windType)}
+                {windDisplay.available
+                  ? windDisplay.headline
+                  : "checking NWS"}
               </span>
             </div>
             <div className="se-stat">
@@ -781,24 +788,63 @@ export function SurfEngine({
           <p className="se-muted">Building the 5-day outlook…</p>
         ) : daily.length ? (
           <div className="se-timeline-scroll">
-            {daily.map((day) => (
-              <div key={day.date} className={`se-day se-day-${day.quality}`}>
-                <span className="se-day-label">{day.label}</span>
-                <strong className="se-day-size">{day.waveHeightFt} ft</strong>
-                <span className="se-day-period">{day.wavePeriodSec}s</span>
-                <span className="se-day-swell">
-                  {day.swellDirectionLabel} {day.swellHeightFt} ft
-                </span>
-                <span className={`se-hour-windtype ${day.windType}`}>
-                  {day.windSpeedMph < 8
-                    ? "Calm"
-                    : `${Math.round(day.windSpeedMph)} ${day.windDirectionLabel}`}
-                </span>
-                <span className={`se-hour-quality ${day.quality}`}>
-                  {day.quality}
-                </span>
-              </div>
-            ))}
+            {daily.map((day) => {
+              const periods =
+                day.periods?.length === 3
+                  ? day.periods
+                  : [
+                      {
+                        id: "afternoon" as const,
+                        label: "Afternoon",
+                        hour: 13,
+                        waveHeightFt: day.waveHeightFt,
+                        wavePeriodSec: day.wavePeriodSec,
+                        swellHeightFt: day.swellHeightFt,
+                        swellPeriodSec: day.swellPeriodSec,
+                        swellDirectionLabel: day.swellDirectionLabel,
+                        windSpeedMph: day.windSpeedMph,
+                        windDirectionLabel: day.windDirectionLabel,
+                        windType: day.windType,
+                        tideHeightFt: null,
+                        tideTrend: null,
+                        quality: day.quality,
+                      },
+                    ];
+              return (
+                <div
+                  key={day.date}
+                  className={`se-day se-day-${day.quality}`}
+                >
+                  <span className="se-day-label">{day.label}</span>
+                  <div className="se-day-periods">
+                    {periods.map((period) => (
+                      <div key={period.id} className="se-day-slot">
+                        <span className="se-day-slot-label">{period.label}</span>
+                        <strong className="se-day-slot-size">
+                          {period.waveHeightFt} ft
+                        </strong>
+                        <span className="se-day-slot-meta">
+                          {period.wavePeriodSec}s · {period.swellDirectionLabel}
+                        </span>
+                        <span className={`se-hour-windtype ${period.windType}`}>
+                          {period.windSpeedMph < 8
+                            ? "Calm"
+                            : `${Math.round(period.windSpeedMph)} ${period.windDirectionLabel}`}
+                        </span>
+                        <span className="se-day-slot-tide">
+                          {period.tideHeightFt != null
+                            ? `${period.tideHeightFt} ft ${period.tideTrend ?? "tide"}`
+                            : "Tide —"}
+                        </span>
+                        <span className={`se-hour-quality ${period.quality}`}>
+                          {period.quality}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <p className="se-muted">5-day outlook unavailable right now.</p>
@@ -836,26 +882,26 @@ export function SurfEngine({
         <section className="se-card se-wind">
           <h3>Wind</h3>
           <p className={`se-wind-headline ${conditions.windType}`}>
-            {windTypeHeadline(conditions.windType)}
+            {windDisplay.headline}
           </p>
-          <p className="se-wind-nums">
-            {conditions.windType === "unknown"
-              ? "Wind data catching up"
-              : `${conditions.windSpeedMph} mph ${conditions.windDirectionLabel}`}
-          </p>
+          <p className="se-wind-nums">{windDisplay.detail}</p>
           <div className="se-wind-arrows" aria-hidden>
             <span className="se-wind-particle" />
             <span className="se-wind-particle delay" />
             <span className="se-wind-particle delay2" />
           </div>
           <p className="se-muted">
-            {conditions.windType === "offshore"
-              ? "Holding faces open — look for clean lines."
-              : conditions.windType === "onshore"
-                ? "Expect texture and softer sections."
-                : conditions.windType === "cross-shore"
-                  ? "Sideshore texture — pick protected peaks."
-                  : "Wind direction is mixed — recheck before you paddle."}
+            {!windDisplay.available
+              ? "Wind direction is mixed — recheck before you paddle."
+              : conditions.windSpeedMph === 0
+                ? "Glassy or light — faces should hold shape if the swell is there."
+                : conditions.windType === "offshore"
+                  ? "Holding faces open — look for clean lines."
+                  : conditions.windType === "onshore"
+                    ? "Expect texture and softer sections."
+                    : conditions.windType === "cross-shore"
+                      ? "Sideshore texture — pick protected peaks."
+                      : "Wind direction is mixed — recheck before you paddle."}
           </p>
         </section>
       </div>

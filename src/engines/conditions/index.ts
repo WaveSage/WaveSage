@@ -228,8 +228,7 @@ async function fetchOpenMeteoWind(spot: SurfSpot, forecastDays = 2) {
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
   return fetchJsonWithRetry<OpenMeteoWeatherResponse>(
     url,
-    "Weather forecast",
-    1
+    "Weather forecast"
   );
 }
 
@@ -245,17 +244,27 @@ function weatherFromStation(nws: NwsWind): OpenMeteoWeatherResponse {
 
 async function fetchSurfaceWind(
   spot: SurfSpot,
-  forecastDays = 2
+  forecastDays = 2,
+  options?: { preferHourlyModel?: boolean }
 ): Promise<OpenMeteoWeatherResponse> {
-  // Station observations beat 10 m model wind, which often shows 8 mph on glassy sand.
-  const nws = await fetchNwsWind(spot);
-  if (nws) return weatherFromStation(nws);
+  // Live now: station observations beat 10 m model wind (often inflated on glassy sand).
+  // Hourly / day-part snapshots need the model timeline, not a single station sample.
+  if (!options?.preferHourlyModel) {
+    const nws = await fetchNwsWind(spot);
+    if (nws) return weatherFromStation(nws);
+  }
 
   try {
     const openMeteo = await fetchOpenMeteoWind(spot, forecastDays);
     if (weatherHasWind(openMeteo)) return openMeteo;
   } catch {
     // Keep going; caller treats empty hourly as missing wind.
+  }
+
+  // Live fallback if model failed but we skipped NWS for hourly mode.
+  if (options?.preferHourlyModel) {
+    const nws = await fetchNwsWind(spot);
+    if (nws) return weatherFromStation(nws);
   }
 
   return { hourly: { time: [] } };
@@ -312,9 +321,10 @@ async function fetchSurfConditionsUncached(
   const todayKey = getPacificNowParts().dateKey;
   const forecastDays =
     options?.at && options.at.dateKey !== todayKey ? 5 : 2;
+  const preferHourlyModel = Boolean(options?.at);
   const [marine, weatherResult, tide] = await Promise.all([
     fetchMarineForecast(spot, forecastDays),
-    fetchSurfaceWind(spot, forecastDays),
+    fetchSurfaceWind(spot, forecastDays, { preferHourlyModel }),
     includeTide
       ? fetchTideInfo(spot, { at: options?.at }).catch(() => null)
       : Promise.resolve(null),
@@ -343,7 +353,9 @@ async function fetchSurfConditionsUncached(
   );
   const waveHeightFt = modelWaveHeightFt;
   const waveDirectionDeg = Math.round(marine.hourly.wave_direction?.[idx] ?? 0);
-  const windMissing = weather.hourly.wind_speed_10m?.[windIdx] == null;
+  const windSourceEmpty = weatherResult.hourly.time.length === 0;
+  const windMissing =
+    windSourceEmpty || weather.hourly.wind_speed_10m?.[windIdx] == null;
   const rawWindMph = windMissing
     ? 0
     : Math.round((weather.hourly.wind_speed_10m?.[windIdx] ?? 0) * 10) / 10;
@@ -354,14 +366,14 @@ async function fetchSurfConditionsUncached(
   const windDirectionDeg = windMissing
     ? 0
     : Math.round(weather.hourly.wind_direction_10m?.[windIdx] ?? 0);
-  const windDirectionLabel =
-    windMissing || windSpeedMph === 0
+  const windDirectionLabel = windMissing
+    ? "—"
+    : windSpeedMph === 0
       ? "Calm"
       : degreesToCompass(windDirectionDeg);
-  const windType =
-    windMissing || windSpeedMph === 0
-      ? "unknown"
-      : classifyWind(windDirectionDeg, spot.shoreBearingDeg);
+  const windType = windMissing
+    ? "unknown"
+    : classifyWind(windDirectionDeg, spot.shoreBearingDeg);
   const swellHeightFt = metersToFeet(
     marine.hourly.swell_wave_height?.[idx] ?? waveHeightFt / METERS_TO_FEET
   );
