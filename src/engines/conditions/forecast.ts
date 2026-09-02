@@ -15,6 +15,11 @@ import { applySpotTransform } from "./spot-transform";
 import { fetchJsonWithRetry } from "./fetch-timeout";
 import { pickHourIndex } from "./time-index";
 import { fetchTideInfo } from "./tide";
+import {
+  metersToFeet,
+  modelSignificantHeightFt,
+  significantToFaceHeightFt,
+} from "./surf-height";
 
 interface OpenMeteoMarineResponse {
   hourly: {
@@ -36,7 +41,6 @@ interface OpenMeteoWeatherResponse {
   };
 }
 
-const METERS_TO_FEET = 3.28084;
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const CALM_WIND_MPH = 8;
 
@@ -49,10 +53,6 @@ const PERIODS: Array<{
   { id: "afternoon", label: "Afternoon", hour: 13 },
   { id: "evening", label: "Evening", hour: 17 },
 ];
-
-function metersToFeet(m: number): number {
-  return Math.round(m * METERS_TO_FEET * 10) / 10;
-}
 
 function assessQuality(
   waveHeightFt: number,
@@ -101,7 +101,7 @@ async function fetchMarineForecast(spot: SurfSpot) {
       "swell_wave_period",
     ].join(","),
     timezone: "America/Los_Angeles",
-    forecast_days: "5",
+    forecast_days: "7",
   });
 
   const url = `https://marine-api.open-meteo.com/v1/marine?${params}`;
@@ -115,7 +115,7 @@ async function fetchSurfaceWind(spot: SurfSpot) {
     hourly: "wind_speed_10m,wind_direction_10m",
     wind_speed_unit: "mph",
     timezone: "America/Los_Angeles",
-    forecast_days: "5",
+    forecast_days: "7",
   });
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
@@ -176,16 +176,6 @@ function buildPeriod(
   });
   if (idx < 0) return null;
 
-  const waveHeightFt = metersToFeet(marine.hourly.wave_height?.[idx] ?? 0.5);
-  const { windSpeedMph, windDirectionLabel, windType } = readWindAt(
-    weather,
-    dateKey,
-    period.hour,
-    spot.shoreBearingDeg
-  );
-  const swellHeightFt = metersToFeet(
-    marine.hourly.swell_wave_height?.[idx] ?? waveHeightFt / METERS_TO_FEET
-  );
   const combinedPeriodSec = Math.round(marine.hourly.wave_period?.[idx] ?? 8);
   const swellPeriodRaw = Math.round(
     marine.hourly.swell_wave_period?.[idx] ?? 0
@@ -195,6 +185,25 @@ function buildPeriod(
     swellPeriodRaw >= 6 ? swellPeriodRaw : 0
   );
   const swellPeriodSec = wavePeriodSec;
+  const hsFt = modelSignificantHeightFt(
+    marine.hourly.wave_height?.[idx],
+    marine.hourly.swell_wave_height?.[idx]
+  );
+  const waveHeightFt = significantToFaceHeightFt(hsFt, wavePeriodSec);
+  const { windSpeedMph, windDirectionLabel, windType } = readWindAt(
+    weather,
+    dateKey,
+    period.hour,
+    spot.shoreBearingDeg
+  );
+  const swellHeightFt = significantToFaceHeightFt(
+    metersToFeet(
+      marine.hourly.swell_wave_height?.[idx] ??
+        marine.hourly.wave_height?.[idx] ??
+        0.5
+    ),
+    wavePeriodSec
+  );
   const waveDirectionDeg = Math.round(marine.hourly.wave_direction?.[idx] ?? 0);
   const marineSwellDir = marine.hourly.swell_wave_direction?.[idx];
   const swellHeightM = marine.hourly.swell_wave_height?.[idx] ?? 0;
@@ -283,7 +292,7 @@ export async function fetchSpotForecast(spot: SurfSpot): Promise<SpotForecast> {
     weather = null;
   }
 
-  const dates = uniqueDates(marine.hourly.time, 5);
+  const dates = uniqueDates(marine.hourly.time, 7);
   const days: DailyForecastDay[] = [];
 
   for (const dateKey of dates) {

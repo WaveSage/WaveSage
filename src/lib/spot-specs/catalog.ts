@@ -189,15 +189,15 @@ export const SPOT_SPECS: SpotSpec[] = [
     aliases: ["the rock", "rock oceanside"],
     region: "San Diego",
     breakType: "beach",
-    swellDegMin: 200,
+    swellDegMin: 165,
     swellDegMax: 315,
     tidePreference: "mid",
     tideNotes:
       "Mid to low tide — the exposed rock helps shape peaks; high tide softens and buries the structure.",
     howItBreaks:
-      "Exposed Oceanside beach break. An exposed rock helps shape and wedge peaks on mid to low tide when sand and swell align — not a reef break.",
+      "Exposed Oceanside beach break. Takes S–SSW tropical and SW–W groundswell. An exposed rock helps shape and wedge peaks on mid to low tide when sand and swell align — not a reef break.",
     minPeriodSec: 8,
-    amplificationFactor: 1.05,
+    amplificationFactor: 1.08,
     shadowSensitivity: 0.7,
   },
   {

@@ -187,9 +187,9 @@ export const SPOT_PROFILES: Record<string, SpotProfile> = {
   "the-rock": {
     id: "the-rock",
     breakType: "beach",
-    idealSwellDegMin: 200,
-    idealSwellDegMax: 280,
-    amplificationFactor: 1.05,
+    idealSwellDegMin: 165,
+    idealSwellDegMax: 315,
+    amplificationFactor: 1.08,
     minPeriodSec: 8,
     tidePreference: "mid",
     shadowSensitivity: 0.7,

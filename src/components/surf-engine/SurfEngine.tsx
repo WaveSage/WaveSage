@@ -351,7 +351,7 @@ export function SurfEngine({
           error?: string;
         };
         if (!cancelled && res.ok && data.days?.length) {
-          setDaily(data.days.slice(0, 5));
+          setDaily(data.days.slice(0, 7));
         } else if (!cancelled) {
           setDaily([]);
         }
@@ -782,10 +782,10 @@ export function SurfEngine({
       <section className="se-card se-daily">
         <div className="se-section-head">
           <h3>Day-by-day</h3>
-          <span className="se-best-pill">5-day outlook</span>
+          <span className="se-best-pill">7-day outlook</span>
         </div>
         {dailyLoading && !daily.length ? (
-          <p className="se-muted">Building the 5-day outlook…</p>
+          <p className="se-muted">Building the 7-day outlook…</p>
         ) : daily.length ? (
           <div className="se-timeline-scroll">
             {daily.map((day) => {
@@ -847,7 +847,7 @@ export function SurfEngine({
             })}
           </div>
         ) : (
-          <p className="se-muted">5-day outlook unavailable right now.</p>
+          <p className="se-muted">7-day outlook unavailable right now.</p>
         )}
       </section>
 

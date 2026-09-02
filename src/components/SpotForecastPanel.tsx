@@ -14,7 +14,7 @@ export function SpotForecastPanel({
   error,
 }: SpotForecastPanelProps) {
   if (loading) {
-    return <p className="muted spot-forecast">Loading 5-day forecast...</p>;
+    return <p className="muted spot-forecast">Loading 7-day forecast...</p>;
   }
 
   if (error) {
@@ -25,7 +25,7 @@ export function SpotForecastPanel({
 
   return (
     <div className="spot-forecast">
-      <h4>5-day forecast — {forecast.spot.name}</h4>
+      <h4>7-day forecast — {forecast.spot.name}</h4>
       <div className="forecast-grid">
         {forecast.days.map((day) => {
           const periods = day.periods?.length

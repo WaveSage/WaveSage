@@ -200,7 +200,7 @@ function formatOneDay(
     "",
     "Conditions shift with tide and wind through the day — morning glass often differs from the afternoon seabreeze.",
     "",
-    "Want today's live check, or another day in the 5-day window?"
+    "Want today's live check, or another day in the 7-day window?"
   );
 
   return lines.join("\n").trim();
@@ -219,7 +219,7 @@ export function formatFutureConditionsReport(
     const available = forecast.days
       .map((d) => `${d.label} ${friendlyDateLabel(d.date)}`)
       .join(", ");
-    return `I don't have a solid forecast day locked for ${request.label} at ${forecast.spot.name} yet. Here's what I do have in the 5-day window: ${available || "nothing loaded"}. Ask again for one of those days.`;
+    return `I don't have a solid forecast day locked for ${request.label} at ${forecast.spot.name} yet. Here's what I do have in the 7-day window: ${available || "nothing loaded"}. Ask again for one of those days.`;
   }
 
   if (request.kind === "weekend" && matched.length >= 2) {

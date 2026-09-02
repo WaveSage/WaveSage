@@ -168,17 +168,20 @@ export function applySpotTransform(
       ? 1 - profile.shadowSensitivity * (1 - exposure)
       : 1;
 
-  const amp =
-    exposure >= 0.7 ? profile.amplificationFactor : 1;
+  const amp = exposure >= 0.7 ? profile.amplificationFactor : 1;
 
   const combined = exposure * period * tideFit * shadowPenalty;
-  const heightFactor = (0.35 + 0.65 * combined) * amp;
-  const clampedFactor = Math.max(0.25, Math.min(1.35, heightFactor));
+  // Keep solid exposure from shrinking the model size. Long-period tropical
+  // and groundswell were reading 20–40% low when fit was merely "good".
+  const fitFactor = 0.55 + 0.45 * combined;
+  const heightFactor = fitFactor * amp;
+  const clampedFactor = Math.max(0.3, Math.min(1.55, heightFactor));
+  const floorFt =
+    exposure >= 0.65 ? raw.waveHeightFt : raw.waveHeightFt * 0.85;
 
   const adjustedWave =
-    Math.round(
-      Math.max(raw.waveHeightFt * 0.85, raw.waveHeightFt * clampedFactor) * 10
-    ) / 10;  const adjustedSwell =
+    Math.round(Math.max(floorFt, raw.waveHeightFt * clampedFactor) * 10) / 10;
+  const adjustedSwell =
     Math.round(raw.swellHeightFt * clampedFactor * 10) / 10;
 
   const swellFitScore = Math.round(combined * 100) / 100;

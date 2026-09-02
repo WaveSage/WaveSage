@@ -11,6 +11,11 @@ import {
   degreesToCompass,
   windTypeLabel,
 } from "./wind";
+import {
+  metersToFeet,
+  modelSignificantHeightFt,
+  significantToFaceHeightFt,
+} from "./surf-height";
 
 interface OpenMeteoMarineResponse {
   hourly: {
@@ -31,12 +36,6 @@ interface OpenMeteoWeatherResponse {
     wind_speed_10m?: number[];
     wind_direction_10m?: number[];
   };
-}
-
-const METERS_TO_FEET = 3.28084;
-
-function metersToFeet(m: number): number {
-  return Math.round(m * METERS_TO_FEET * 10) / 10;
 }
 
 function assessQuality(
@@ -338,9 +337,6 @@ async function fetchSurfConditionsUncached(
 
   const combinedWaveM = marine.hourly.wave_height?.[idx] ?? 0.5;
   const swellM = marine.hourly.swell_wave_height?.[idx] ?? 0;
-  const modelWaveHeightFt = metersToFeet(
-    swellM > 0 ? Math.max(combinedWaveM, swellM) : combinedWaveM
-  );
   // Open-Meteo's swell_wave_period can lag a shorter secondary component while
   // wave_period reflects the dominant groundswell — prefer the longer period.
   const combinedPeriodSec = Math.round(marine.hourly.wave_period?.[idx] ?? 8);
@@ -351,7 +347,8 @@ async function fetchSurfConditionsUncached(
     combinedPeriodSec,
     swellPeriodFromMarine >= 6 ? swellPeriodFromMarine : 0
   );
-  const waveHeightFt = modelWaveHeightFt;
+  const hsFt = modelSignificantHeightFt(combinedWaveM, swellM);
+  const waveHeightFt = significantToFaceHeightFt(hsFt, wavePeriodSec);
   const waveDirectionDeg = Math.round(marine.hourly.wave_direction?.[idx] ?? 0);
   const windSourceEmpty = weatherResult.hourly.time.length === 0;
   const windMissing =
@@ -374,8 +371,11 @@ async function fetchSurfConditionsUncached(
   const windType = windMissing
     ? "unknown"
     : classifyWind(windDirectionDeg, spot.shoreBearingDeg);
-  const swellHeightFt = metersToFeet(
-    marine.hourly.swell_wave_height?.[idx] ?? waveHeightFt / METERS_TO_FEET
+  const swellHeightFt = significantToFaceHeightFt(
+    metersToFeet(
+      marine.hourly.swell_wave_height?.[idx] ?? combinedWaveM
+    ),
+    wavePeriodSec
   );
   // Report the period we actually scored on (dominant energy), not a short secondary.
   const swellPeriodSec = wavePeriodSec;
